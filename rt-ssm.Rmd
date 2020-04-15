@@ -106,7 +106,7 @@ And here, we can substitute $\gamma(R_t-1)$ for $\theta$ and $I_t$ for $exposure
 
 The other change we'll make is to call $\gamma(R_t-1) = \theta$ (see the note to the right). 
 
-Then a state space model with just an intercept and `offset` $= I_t$ will be:
+Then a state space model with just an intercept $\theta_t$ and `offset` $= I_t$ will be:
 
 $$I_{t + 1} \sim poisson(I_te^{\theta_t})$$
 $$\theta_t \sim N(\theta_{t-1}, \sigma)$$
