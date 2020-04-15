@@ -250,8 +250,7 @@ We now have to invert $\theta = \gamma(R_t-1)$
 ```
 
 ```{r}
-rt = (theta / GAMMA + 1) %>% 
-  mutate(date = dates)
+rt = theta / GAMMA + 1
 ```
 
 <br>
@@ -260,6 +259,7 @@ rt = (theta / GAMMA + 1) %>%
 
 ```{r fig.fullwidth=T, fig.height=5}
 rt %>% 
+  mutate(date = dates) %>% 
   filter(date > lubridate::ymd("20200301")) %>% 
   ggplot() + 
   aes(x = date, y = mean_estimate, ymin = lower, ymax = upper) + 

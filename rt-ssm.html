@@ -378,11 +378,11 @@ itp1 = series[-1]</code></pre>
 )[-1, ] # throw away the initial observation</code></pre>
 <p><br></p>
 <p><label for="tufte-mn-15" class="margin-toggle">⊕</label><input type="checkbox" id="tufte-mn-15" class="margin-toggle"><span class="marginnote"><span style="display: block;">We now have to invert <span class="math inline"><span class="math inline">\(\theta = \gamma(R_t-1)\)</span></span></span></span></p>
-<pre class="r"><code>rt = (theta / GAMMA + 1) %&gt;% 
-  mutate(date = dates)</code></pre>
+<pre class="r"><code>rt = theta / GAMMA + 1</code></pre>
 <p><br></p>
 <p><span class="newthought">And voilà</span> we can now plot our estimate of <span class="math inline">\(R_t\)</span>, along with associated uncertainty, over time:</p>
 <pre class="r"><code>rt %&gt;% 
+  mutate(date = dates) %&gt;% 
   filter(date &gt; lubridate::ymd(&quot;20200301&quot;)) %&gt;% 
   ggplot() + 
   aes(x = date, y = mean_estimate, ymin = lower, ymax = upper) + 
