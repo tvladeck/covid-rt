@@ -21,9 +21,9 @@ library(tufte)
 
 I think that there are two major ways his approach can be improved:
 
-`r tufte::margin_note("I could well be wrong about #1, and have misunderstood his procedure at some point")`
+`r tufte::margin_note("I could well be wrong about #1, and have misunderstood his procedure at some point. However, the model below, which explicitly models $R_t$ as a moving target, has wider uncertainty near present day viz. Systrom's model")`
 
-1. Systrom's procedure to estimate $R_t$ seemed to assume a _static_ $R_t$, of which we got recursively better estimates with additional data. Ideally we would assume that $R_t$ could evolve over time (indeed, this seemed to be _implictly_ assumed in the post), but in order to accommodate we need to include some kind of process variance
+1. Systrom's procedure to estimate $R_t$ seemed to assume a _static_ $R_t$, of which we got succesively better estimates with additional data. Ideally we would assume that $R_t$ could evolve over time (indeed, this seemed to be _implictly_ assumed in the post), but in order to accommodate we need to include some kind of process variance
 2. I had a hard time going through Systrom's estimation procedure. I am sure it's right, but it's also purpose-built for just this problem. If my math is right below, we can use the tried-and-true [Kalman Filter](https://en.wikipedia.org/wiki/Kalman_filter) to recursively estimate $R_t$. This has the advantage of using well-tested approaches; it also brings with it a suite of additional enhancements (like modeling trend, seasonal effects, etc.)
 
 `r newthought("The main equation we start with")` is 
@@ -112,6 +112,17 @@ library(KFAS)
 library(zoo)
 ```
 
+```{r include=FALSE}
+theme_set(theme_minimal() + 
+  theme(
+    panel.background = element_rect(fill = "transparent"), # bg of the panel
+    plot.background = element_rect(fill = "#fffff8", color = NA), # bg of the plot
+    panel.grid.major = element_blank(), # get rid of major grid
+    legend.background = element_rect(fill = "transparent"), # get rid of legend bg
+    legend.box.background = element_rect(fill = "transparent") # get rid of legend panel bg
+  ))
+```
+
 ```{r, message=F, warning=F}
 #### data ####
 
@@ -180,10 +191,7 @@ mod$Q[1,1,1] = NA
 ```
 
 ```{r}
-mod_fit = fitSSM(mod, c(1), 
-                 method = "Brent", 
-                 upper = 1, 
-                 lower = 0)
+mod_fit = fitSSM(mod, c(1,1))
 ```
 
 ```{marginfigure}
@@ -218,12 +226,35 @@ rt = (theta / GAMMA + 1) %>%
 
 `r newthought("And voilà")` we can now plot our estimate of $R_t$, along with associated uncertainty, over time:
 
-```{r, fig.fullwidth = T}
+```{r fig.fullwidth=T, fig.height=5}
 rt %>% 
   filter(date > lubridate::ymd("20200301")) %>% 
   ggplot() + 
   aes(x = date, y = mean_estimate, ymin = lower, ymax = upper) + 
-  geom_line() + 
-  geom_ribbon(alpha = .5) + 
-  geom_hline(yintercept = 1)
+  geom_line(color = "grey") + 
+  geom_ribbon(alpha = .5, fill = "grey") + 
+  geom_hline(yintercept = 1) + 
+  labs(y = "Estimate of Rt", x = "") 
+  
 ```
+
+`r newthought("This is very similar")` to Systrom's estimate for New York State:
+
+![](assets/systrom-ny.png)
+
+```{marginfigure}
+This is due to the inclusion of 
+
+$$\theta_t \sim N(\theta_{t-1}, \sigma)$$
+  
+in our model specification
+```
+
+The main difference, however, is that the uncertainty in this model never collapses as far as it does in Systrom's model. This is due to the fact that we are assuming that $\gamma(R_t-1)$ (and by extension, $R_t$) is a moving target. 
+
+`r newthought("Further extensions of the state space approach")` could allow for including:
+
+- Trend components (both evolving level and slope), and
+- Seasonal components (e.g. day-of-week, which seems to be present in the data)
+
+
