@@ -314,8 +314,8 @@ if (window.hljs) {
 <p>Going back to our model setup:</p>
 <p><span class="math display">\[I_{t + 1} \sim poisson(I_te^{\gamma(R_t - 1)})\]</span></p>
 <p>This is exactly equivalent to a poisson regression with an <code>offset</code> or <code>exposure</code> term equal to <span class="math inline">\(I_t\)</span>.</p>
-<p>I have mentioned this in the margin notes twice, but the other change we’ll make is to call <span class="math inline">\(\gamma(R_t-1) = \theta\)</span>.</p>
 <p><label for="tufte-mn-7" class="margin-toggle">⊕</label><input type="checkbox" id="tufte-mn-7" class="margin-toggle"><span class="marginnote"><span style="display: block;">Pulling <a href="https://en.wikipedia.org/wiki/Poisson_regression#Poisson_regression_in_practice">from wikipedia</a></span> <span style="display: block;">The poisson model is set up as:</span> <span style="display: block;"><span class="math display"><span class="math display">\[E[Y | \theta] = exposure*e^{\theta}\]</span></span></span> <span style="display: block;">We then apply the log link function:</span> <span style="display: block;"><span class="math display"><span class="math display">\[log(E[Y | \theta]) = log(exposure) + \theta\]</span></span></span> <span style="display: block;">And here, we can substitute <span class="math inline"><span class="math inline">\(\gamma(R_t-1)\)</span></span> for <span class="math inline"><span class="math inline">\(\theta\)</span></span> and <span class="math inline"><span class="math inline">\(I_t\)</span></span> for <span class="math inline"><span class="math inline">\(exposure\)</span></span></span></span></p>
+<p>The other change we’ll make is to call <span class="math inline">\(\gamma(R_t-1) = \theta\)</span> (see the note to the right).</p>
 <p>Then a state space model with just an intercept and <code>offset</code> <span class="math inline">\(= I_t\)</span> will be:</p>
 <p><span class="math display">\[I_{t + 1} \sim poisson(I_te^{\theta_t})\]</span> <span class="math display">\[\theta_t \sim N(\theta_{t-1}, \sigma)\]</span> It is this second term in the model that allows us to <em>explicitly model the <em>process variance</em></em> in the “interest rate” <span class="math inline">\(\gamma(R_t-1)\)</span></p>
 <p>Doing this in <code>R</code> is straightforward:</p>
@@ -359,7 +359,7 @@ itp1 = series[-1]</code></pre>
 <pre class="r"><code>mod = SSModel(
   itp1 ~ 1, 
   u = it,
-  distribution = &quot;poisson&quot;,
+  distribution = &quot;poisson&quot;
 )</code></pre>
 <p><br></p>
 <p><label for="tufte-mn-12" class="margin-toggle">⊕</label><input type="checkbox" id="tufte-mn-12" class="margin-toggle"><span class="marginnote"><span style="display: block;">This is <code>KFAS</code>’s way of estimating parameters with maximum likelihood. This corresponds to <span class="math inline"><span class="math inline">\(\sigma\)</span></span> above (the process variance in <span class="math inline"><span class="math inline">\(\theta\)</span></span>, which is our “interest rate” <span class="math inline"><span class="math inline">\(\gamma(R_t-1)\)</span></span>)</span></span></p>

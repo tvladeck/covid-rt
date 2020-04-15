@@ -90,8 +90,6 @@ $$I_{t + 1} \sim poisson(I_te^{\gamma(R_t - 1)})$$
 
 This is exactly equivalent to a poisson regression with an `offset` or `exposure` term equal to $I_t$. 
 
-I have mentioned this in the margin notes twice, but the other change we'll make is to call $\gamma(R_t-1) = \theta$. 
-
 ```{marginfigure}
 Pulling [from wikipedia](https://en.wikipedia.org/wiki/Poisson_regression#Poisson_regression_in_practice)
                          
@@ -105,6 +103,8 @@ $$log(E[Y | \theta]) = log(exposure) + \theta$$
   
 And here, we can substitute $\gamma(R_t-1)$ for $\theta$ and $I_t$ for $exposure$
 ```
+
+The other change we'll make is to call $\gamma(R_t-1) = \theta$ (see the note to the right). 
 
 Then a state space model with just an intercept and `offset` $= I_t$ will be:
 
@@ -200,7 +200,7 @@ itp1 = series[-1]
 mod = SSModel(
   itp1 ~ 1, 
   u = it,
-  distribution = "poisson",
+  distribution = "poisson"
 )
 ```
 
