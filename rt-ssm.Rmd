@@ -289,7 +289,7 @@ $$\theta_t \sim N(\theta_{t-1}, \sigma)$$
 in our model specification
 ```
 
-The main difference, however, is that the uncertainty in this model never collapses as far as it does in Systrom's model. This is due to the fact that we are assuming that $\gamma(R_t-1)$ (and by extension, $R_t$) is a moving target. 
+The main difference, however, is that the uncertainty in the state space version of this model never collapses as far as it does in Systrom's model. This is due to the fact that we are assuming that $\gamma(R_t-1)$ (and by extension, $R_t$) is a moving target. 
 
 `r newthought("Further extensions of the state space approach")` could allow for including:
 
