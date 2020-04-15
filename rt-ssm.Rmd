@@ -12,12 +12,67 @@ library(tufte)
 ```
 
 
-`r newthought("Disclaimer: I am not an epidemiologist")`. Further to [what Kevin said](https://twitter.com/kevin/status/1249584902581837824), I am not going to try and invent a new model, but rather help estimate an already-existing-one, that was developed by epidemiologists. 
+`r newthought("Disclaimer: I am not an epidemiologist")`. Further to [what Kevin said](https://twitter.com/kevin/status/1249584902581837824), I am not going to try and invent a new model, but rather help estimate [an already-existing-one](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0002185#abstract0), that was developed by epidemiologists. 
+
+`r tufte::margin_note("![This is the post](assets/systrom-blog.png)")`
 
 `r newthought("The background on this is")` [this post](http://systrom.com/blog/the-metric-we-need-to-manage-covid-19/) (and [this technical notebook](https://github.com/k-sys/covid-19/blob/master/Realtime%20R0.ipynb)) by Kevin Systrom, founder of Instagram, makes the case that we need to have accurate real-time estimates of $R_t$, the [reproduction number](https://www1.health.gov.au/internet/publications/publishing.nsf/Content/mathematical-models~mathematical-models-models.htm~mathematical-models-2.2.htm). 
 
-I think that there are two major ways his approach can be improved. 
 
-## Motivation
+I think that there are two major ways his approach can be improved:
 
-1. 
+`r tufte::margin_note("I could well be wrong about #1, and have misunderstood his procedure at some point")`
+
+1. Systrom's procedure to estimate $R_t$ seemed to assume a _static_ $R_t$, of which we got recursively better estimates with additional data. Ideally we would assume that $R_t$ could evolve over time (indeed, this seemed to be _implictly_ assumed in the post), but in order to accommodate we need to include some kind of process variance
+2. I had a hard time going through Systrom's estimation procedure. I am sure it's right, but it's also purpose-built for just this problem. If my math is right below, we can use the tried-and-true [Kalman Filter](https://en.wikipedia.org/wiki/Kalman_filter) to recursively estimate $R_t$. This has the advantage of using well-tested approaches; it also brings with it a suite of additional enhancements (like modeling trend, seasonal effects, etc.)
+
+`r newthought("The main equation we start with")` is 
+
+`r tufte::margin_note("This is equation (2) in [the reference paper](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0002185#abstract0)")`
+
+$$I(t + \tau) = I(t)exp(\tau\gamma(R_t - 1))$$
+
+```{marginfigure}
+Finance people will notice that this formula is the same as continuously compound interest
+
+$$PV e^{i\tau}$$
+  
+with $i$ the interest rate and $\tau$ the time period
+
+So we can think of $\gamma(R_t-1)$ as our "interest rate"
+```
+
+Where: 
+
+- $I(t)$ is the number of _infectious_ people at time $t$ (More on the interpretation of $I(t)$ below)
+- $\tau$ is the time difference (which for us will always equal one day)
+- $\gamma$ is the reciprocal of the _serial interval_ (which Systrom sets to 4, so $\gamma$ = 1/4)
+- $R_t$ is the number we care about
+
+
+`r newthought("There is a major issue with $I(t)$")`. Specifically, we never observe it. All we observe are the number of new cases each day, and the cumulative case count. `r margin_note("And deaths, of course, but this won't figure in to the analysis below.")`
+
+I am not sure if it boils down to the same issue or not, but Systrom says:
+
+> For epidemics that have $R_t\gt1$ for a long time and then become under control ($R_t\lt1$), the posterior gets stuck. It cannot forget about the many days where $R_t\gt1$ so eventually $P(R_t|k)$ asymptotically approaches 1 when we know it's well under 1. The authors note this in the paper as a footnote. Unfortunately this won't work for us. The most critical thing to know is when we've dipped below the 1.0 threshold!
+
+> So, I propose to only incorporate the last $m$ days of the likelihood function.
+
+We have to do something similar. Here's why:
+
+If we're modeling:
+
+$$I(t + 1) \sim poisson(I(t)e^{\gamma(R_t - 1)})$$
+And we use cumulative cases covering the entire history as $I(t)$, then it will always be the case that
+
+$$I(t+1) \geq I(t)$$
+
+Which implies
+
+$$e^{\gamma(R_t - 1)} \geq 1$$
+
+$$\gamma(R_t - 1) \geq 0$$
+$$R_t \geq 1$$
+So, to allow $R_t \lt 1$, we need to allow $I(t + \tau) \lt I(t)$, which we can accomplish the same way -- by only considering the past $W$ days in our analysis. 
+
+
