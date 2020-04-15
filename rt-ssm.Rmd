@@ -16,7 +16,7 @@ library(tufte)
 
 `r tufte::margin_note("![This is the post](assets/systrom-blog.png)")`
 
-`r newthought("The background on this is")` [this post](http://systrom.com/blog/the-metric-we-need-to-manage-covid-19/) (and [this technical notebook](https://github.com/k-sys/covid-19/blob/master/Realtime%20R0.ipynb)) by Kevin Systrom, founder of Instagram, which makes the case that we need to have accurate real-time estimates of $R_t$, the [reproduction number](https://www1.health.gov.au/internet/publications/publishing.nsf/Content/mathematical-models~mathematical-models-models.htm~mathematical-models-2.2.htm) and provides a methodology for doing so. 
+`r newthought("The background on this is")` [this post](http://systrom.com/blog/the-metric-we-need-to-manage-covid-19/) (and [this technical notebook](https://github.com/k-sys/covid-19/blob/master/Realtime%20R0.ipynb)) by Kevin Systrom, founder of Instagram, which makes the case that we need to have accurate real-time estimates of $R_t$, the [reproduction number](https://www1.health.gov.au/internet/publications/publishing.nsf/Content/mathematical-models~mathematical-models-models.htm~mathematical-models-2.2.htm), and provides a methodology for estimating them. 
 
 
 While his approach is clear and awesome, I think that there are two major ways it can be improved:
@@ -257,7 +257,7 @@ rt = theta / GAMMA + 1
 
 `r newthought("And voilà")` we can now plot our estimate of $R_t$, along with associated uncertainty, over time:
 
-```{r fig.fullwidth=T, fig.height=5}
+```{r fig.height=4}
 rt %>% 
   mutate(date = dates) %>% 
   filter(date > lubridate::ymd("20200301")) %>% 
@@ -266,9 +266,16 @@ rt %>%
   geom_line(color = "grey") + 
   geom_ribbon(alpha = .5, fill = "grey") + 
   geom_hline(yintercept = 1) + 
-  labs(y = "Estimate of Rt", x = "") 
+  labs(y = "Estimate of Rt", x = "") + 
+  scale_y_continuous(breaks = c(1,2,3,4)) +
+  coord_cartesian(ylim=c(NA, 5)) + 
+  NULL
   
 ```
+
+<span class="marginnote">
+Our final result is `r round(rt[length(series)-1, 1], 2)` with standard error `r round((rt[length(series)-1, 2] - rt[length(series)-1,1])/1.96, 2)`
+</span>
 
 `r newthought("This is very similar")` to Systrom's estimate for New York State:
 
