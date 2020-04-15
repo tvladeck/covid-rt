@@ -30,7 +30,7 @@ I think that there are two major ways his approach can be improved:
 
 `r tufte::margin_note("This is equation (2) in [the reference paper](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0002185#abstract0)")`
 
-$$I(t + \tau) = I(t)exp(\tau\gamma(R_t - 1))$$
+$$I_{t + \tau} = I_t e^{\tau\gamma(R_t - 1)}$$
 
 ```{marginfigure}
 Finance people will notice that this formula is the same as continuously compound interest
@@ -44,13 +44,13 @@ So we can think of $\gamma(R_t-1)$ as our "interest rate"
 
 Where: 
 
-- $I(t)$ is the number of _infectious_ people at time $t$ (More on the interpretation of $I(t)$ below)
+- $I_t$ is the number of _infectious_ people at time $t$ (More on the interpretation of $I_t$ below)
 - $\tau$ is the time difference (which for us will always equal one day)
 - $\gamma$ is the reciprocal of the _serial interval_ (which Systrom sets to 4, so $\gamma$ = 1/4)
 - $R_t$ is the number we care about
 
 
-`r newthought("There is a major issue with $I(t)$")`. Specifically, we never observe it. All we observe are the number of new cases each day, and the cumulative case count. `r margin_note("And deaths, of course, but this won't figure in to the analysis below.")`
+`r newthought("There is a major issue with $I_t$")`. Specifically, we never observe it. All we observe are the number of new cases each day, and the cumulative case count. `r margin_note("And deaths, of course, but this won't figure in to the analysis below.")`
 
 I am not sure if it boils down to the same issue or not, but Systrom says:
 
@@ -62,10 +62,10 @@ We have to do something similar. Here's why:
 
 If we're modeling:
 
-$$I(t + 1) \sim poisson(I(t)e^{\gamma(R_t - 1)})$$
-And we use cumulative cases covering the entire history as $I(t)$, then it will always be the case that
+$$I_{t + 1} \sim poisson(I_te^{\gamma(R_t - 1)})$$
+And we use cumulative cases covering the entire history as $I_t$, then it will always be the case that
 
-$$I(t+1) \geq I(t)$$
+$$I_{t + 1} \geq I_t$$
 
 Which implies
 
@@ -73,6 +73,157 @@ $$e^{\gamma(R_t - 1)} \geq 1$$
 
 $$\gamma(R_t - 1) \geq 0$$
 $$R_t \geq 1$$
-So, to allow $R_t \lt 1$, we need to allow $I(t + \tau) \lt I(t)$, which we can accomplish the same way -- by only considering the past $W$ days in our analysis. 
+So, to allow $R_t \lt 1$, we need to allow $I_{t + \tau} \lt I_t$, which we can accomplish the same way -- by only considering the past $W$ days in our analysis. 
+
+`r newthought("Using a state space approach")` seems natural for this problem, since we're dealing with streaming data that we want to use to recursively estimate a moving target. 
+
+Going back to our model setup: 
+
+$$I_{t + 1} \sim poisson(I_te^{\gamma(R_t - 1)})$$
+```{marginfigure}
+Pulling [from wikipedia](https://en.wikipedia.org/wiki/Poisson_regression#Poisson_regression_in_practice)
+                         
+$$E[Y | \theta] = exposure*e^{\theta}$$
+$$log(E[Y | \theta]) = log(exposure) + \theta$$  
+  
+Where we can substitute $\gamma(R_t-1)$ for $\theta$ and $I_t$ for $exposure$
+```
+
+This is exactly equivalent to a poisson regression with an `offset` or `exposure` term equal to $I_t$. 
+
+If we allow ourselves to call $\gamma(R_t-1) = \theta$ for a second, just to simplify notation, then a state space model with just an intercept and `offset` $= I_t$ will be:
+
+$$I_{t + 1} \sim poisson(I_te^{\theta_t})$$
+$$\theta_t \sim N(\theta_{t-1}, \sigma)$$
+It is this second term in the model that allows us to _explicitly model the *process variance*_ in the "interest rate" $\gamma(R_t-1)$
+
+Doing this in `R` is straightforward: 
+
+```{marginfigure}
+[KFAS](https://arxiv.org/pdf/1612.01907.pdf) is a package for "Exponential Family State Space Models in R"
+
+[zoo](https://cran.r-project.org/web/packages/zoo/zoo.pdf) we use for the function `rollsum`
+```
 
 
+```{r, warning=F, message=F}
+library(tidyverse)
+library(KFAS)
+library(zoo)
+```
+
+```{r, message=F, warning=F}
+#### data ####
+
+url = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv'
+dat = read_csv(url)
+```
+
+```{r}
+
+#### constants ####
+
+WINDOW = 20
+SERIAL_INTERVAL = 4
+GAMMA = 1 / SERIAL_INTERVAL
+STATE = "New York"
+
+#### building the dataset #### 
+# rolling window
+series = 
+  dat %>% 
+  filter(state == STATE) %>%
+  filter(cases>0) %>% 
+  pull(cases) %>% 
+  diff %>% 
+  {. + 1} %>% 
+  {c(rep(0, WINDOW-1), .)} %>% 
+  rollsum(., WINDOW) 
+
+# dates
+dates = dat %>% 
+  filter(state == STATE) %>%
+  filter(cases>0) %>% 
+  pull(date) %>% 
+  .[c(-1,-2)]
+```
+
+```{marginfigure}
+`it` here is equal to $I_t$, and
+
+`itp1` is $I_{t+1}$
+```
+
+```{r}
+it = series[-length(series)]
+itp1 = series[-1]
+```
+
+```{marginfigure}
+`u` is the exposure parameter. Often you will see this entered into a `glm` as `log(.)`. However, `KFAS` in its [documentation](https://www.rdocumentation.org/packages/KFAS/versions/1.3.7/topics/KFAS) makes clear that they handle that on their end
+```
+
+```{r}
+mod = SSModel(
+  itp1 ~ 1, 
+  u = it,
+  distribution = "poisson",
+)
+```
+
+```{marginfigure}
+This is `KFAS`'s way of estimating parameters with maximum likelihood. This corresponds to $\sigma$ above (the process variance in $\theta$, which is our "interest rate" $\gamma(R_t-1)$)
+```
+
+```{r}
+mod$Q[1,1,1] = NA
+```
+
+```{r}
+mod_fit = fitSSM(mod, c(1), 
+                 method = "Brent", 
+                 upper = 1, 
+                 lower = 0)
+```
+
+```{marginfigure}
+Once we've estimated $\sigma$, we can recursively filter and smooth the $\theta$s
+```
+
+```{r}
+mod_fit_filtered = KFS(
+  mod_fit$model, c("state"), c("state"))
+```
+
+```{marginfigure}
+Here we extract the estimates of $\theta$ with a traditional 95% confidence interval
+```
+
+```{r}
+theta  = tibble(
+  mean_estimate = mod_fit_filtered$a[, 1],
+  upper = mean_estimate + 1.96 * sqrt(mod_fit_filtered$P[1,1,]),
+  lower = mean_estimate - 1.96 * sqrt(mod_fit_filtered$P[1,1,])
+)[-1, ] # throw away the initial observation
+```
+
+```{marginfigure}
+We now have to invert $\theta = \gamma(R_t-1)$
+```
+
+```{r}
+rt = (theta / GAMMA + 1) %>% 
+  mutate(date = dates)
+```
+
+`r newthought("And voilà")` we can now plot our estimate of $R_t$, along with associated uncertainty, over time:
+
+```{r, fig.fullwidth = T}
+rt %>% 
+  filter(date > lubridate::ymd("20200301")) %>% 
+  ggplot() + 
+  aes(x = date, y = mean_estimate, ymin = lower, ymax = upper) + 
+  geom_line() + 
+  geom_ribbon(alpha = .5) + 
+  geom_hline(yintercept = 1)
+```

@@ -1,8 +1,7 @@
 library(tidyverse)
 library(KFAS)
-library(bsts)
 
-#### dat ####
+#### data ####
 
 url = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv'
 dat = read_csv(url)
@@ -79,7 +78,7 @@ WINDOW = 20
 SERIAL_INTERVAL = 4
 GAMMA = 1 / SERIAL_INTERVAL
 
-STATE = "New York"
+STATE = "Washington"
 
 series = 
   dat %>% 
@@ -107,7 +106,7 @@ mod = SSModel(
 
 mod$Q[1,1,1] = NA
 
-mod_fit = fitSSM(mod, c(1,1))
+mod_fit = fitSSM(mod, c(1), method = "Brent", upper = 1, lower = 0)
 
 fitted(mod_fit$model) %>% plot
 
