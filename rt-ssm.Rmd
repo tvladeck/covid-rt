@@ -16,10 +16,10 @@ library(tufte)
 
 `r tufte::margin_note("![This is the post](assets/systrom-blog.png)")`
 
-`r newthought("The background on this is")` [this post](http://systrom.com/blog/the-metric-we-need-to-manage-covid-19/) (and [this technical notebook](https://github.com/k-sys/covid-19/blob/master/Realtime%20R0.ipynb)) by Kevin Systrom, founder of Instagram, makes the case that we need to have accurate real-time estimates of $R_t$, the [reproduction number](https://www1.health.gov.au/internet/publications/publishing.nsf/Content/mathematical-models~mathematical-models-models.htm~mathematical-models-2.2.htm). 
+`r newthought("The background on this is")` [this post](http://systrom.com/blog/the-metric-we-need-to-manage-covid-19/) (and [this technical notebook](https://github.com/k-sys/covid-19/blob/master/Realtime%20R0.ipynb)) by Kevin Systrom, founder of Instagram, which makes the case that we need to have accurate real-time estimates of $R_t$, the [reproduction number](https://www1.health.gov.au/internet/publications/publishing.nsf/Content/mathematical-models~mathematical-models-models.htm~mathematical-models-2.2.htm) and provides a methodology for doing so. 
 
 
-I think that there are two major ways his approach can be improved:
+While his approach is clear and awesome, I think that there are two major ways it can be improved:
 
 `r tufte::margin_note("I could well be wrong about #1, and have misunderstood his procedure at some point. However, the model below, which explicitly models $R_t$ as a moving target, has wider uncertainty near present day viz. Systrom's model")`
 
@@ -39,7 +39,7 @@ $$PV e^{i\tau}$$
   
 with $i$ the interest rate and $\tau$ the time period
 
-So we can think of $\gamma(R_t-1)$ as our "interest rate"
+So we can think of $\gamma(R_t-1)$ as our "interest rate", which we call $\theta$ below
 ```
 
 Where: 
@@ -73,6 +73,11 @@ $$e^{\gamma(R_t - 1)} \geq 1$$
 
 $$\gamma(R_t - 1) \geq 0$$
 $$R_t \geq 1$$
+
+```{marginfigure}
+I set $W$ (`WINDOW` in my code) to `20`.
+```
+
 So, to allow $R_t \lt 1$, we need to allow $I_{t + \tau} \lt I_t$, which we can accomplish the same way -- by only considering the past $W$ days in our analysis. 
 
 `r newthought("Using a state space approach")` seems natural for this problem, since we're dealing with streaming data that we want to use to recursively estimate a moving target. 
@@ -80,18 +85,28 @@ So, to allow $R_t \lt 1$, we need to allow $I_{t + \tau} \lt I_t$, which we can 
 Going back to our model setup: 
 
 $$I_{t + 1} \sim poisson(I_te^{\gamma(R_t - 1)})$$
-```{marginfigure}
-Pulling [from wikipedia](https://en.wikipedia.org/wiki/Poisson_regression#Poisson_regression_in_practice)
-                         
-$$E[Y | \theta] = exposure*e^{\theta}$$
-$$log(E[Y | \theta]) = log(exposure) + \theta$$  
-  
-Where we can substitute $\gamma(R_t-1)$ for $\theta$ and $I_t$ for $exposure$
-```
+
+
 
 This is exactly equivalent to a poisson regression with an `offset` or `exposure` term equal to $I_t$. 
 
-If we allow ourselves to call $\gamma(R_t-1) = \theta$ for a second, just to simplify notation, then a state space model with just an intercept and `offset` $= I_t$ will be:
+I have mentioned this in the margin notes twice, but the other change we'll make is to call $\gamma(R_t-1) = \theta$. 
+
+```{marginfigure}
+Pulling [from wikipedia](https://en.wikipedia.org/wiki/Poisson_regression#Poisson_regression_in_practice)
+                         
+The poisson model is set up as:
+                         
+$$E[Y | \theta] = exposure*e^{\theta}$$
+  
+We then apply the log link function:
+  
+$$log(E[Y | \theta]) = log(exposure) + \theta$$  
+  
+And here, we can substitute $\gamma(R_t-1)$ for $\theta$ and $I_t$ for $exposure$
+```
+
+Then a state space model with just an intercept and `offset` $= I_t$ will be:
 
 $$I_{t + 1} \sim poisson(I_te^{\theta_t})$$
 $$\theta_t \sim N(\theta_{t-1}, \sigma)$$
@@ -139,6 +154,13 @@ SERIAL_INTERVAL = 4
 GAMMA = 1 / SERIAL_INTERVAL
 STATE = "New York"
 
+```
+
+```{marginfigure}
+All we're doing here is to rebuild the "cumulative cases", only considering the new cases in `WINDOW`. We left pad the series to make things line up correctly.
+```
+
+```{r}
 #### building the dataset #### 
 # rolling window
 series = 
@@ -171,7 +193,7 @@ itp1 = series[-1]
 ```
 
 ```{marginfigure}
-`u` is the exposure parameter. Often you will see this entered into a `glm` as `log(.)`. However, `KFAS` in its [documentation](https://www.rdocumentation.org/packages/KFAS/versions/1.3.7/topics/KFAS) makes clear that they handle that on their end
+`u` is the exposure parameter. Often you will see this entered into a `glm` as `log(.)`. (See the margin note above) However, `KFAS` in its [documentation](https://www.rdocumentation.org/packages/KFAS/versions/1.3.7/topics/KFAS) makes clear that they log this term inside the function
 ```
 
 ```{r}
@@ -181,6 +203,8 @@ mod = SSModel(
   distribution = "poisson",
 )
 ```
+
+<br>
 
 ```{marginfigure}
 This is `KFAS`'s way of estimating parameters with maximum likelihood. This corresponds to $\sigma$ above (the process variance in $\theta$, which is our "interest rate" $\gamma(R_t-1)$)
@@ -194,6 +218,8 @@ mod$Q[1,1,1] = NA
 mod_fit = fitSSM(mod, c(1,1))
 ```
 
+<br>
+
 ```{marginfigure}
 Once we've estimated $\sigma$, we can recursively filter and smooth the $\theta$s
 ```
@@ -202,6 +228,8 @@ Once we've estimated $\sigma$, we can recursively filter and smooth the $\theta$
 mod_fit_filtered = KFS(
   mod_fit$model, c("state"), c("state"))
 ```
+
+<br>
 
 ```{marginfigure}
 Here we extract the estimates of $\theta$ with a traditional 95% confidence interval
@@ -215,6 +243,8 @@ theta  = tibble(
 )[-1, ] # throw away the initial observation
 ```
 
+<br>
+
 ```{marginfigure}
 We now have to invert $\theta = \gamma(R_t-1)$
 ```
@@ -223,6 +253,8 @@ We now have to invert $\theta = \gamma(R_t-1)$
 rt = (theta / GAMMA + 1) %>% 
   mutate(date = dates)
 ```
+
+<br>
 
 `r newthought("And voilà")` we can now plot our estimate of $R_t$, along with associated uncertainty, over time:
 
@@ -257,4 +289,8 @@ The main difference, however, is that the uncertainty in this model never collap
 - Trend components (both evolving level and slope), and
 - Seasonal components (e.g. day-of-week, which seems to be present in the data)
 
+`r newthought("Thoughts, questions?")`
+
+- My email is `tom at gradientmetrics dot com`
+- The code for this [is here](https://github.com/tvladeck/covid-rt)
 
