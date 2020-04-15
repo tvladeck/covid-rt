@@ -1,0 +1,23 @@
+---
+title: "Using State Space Models to Estimate Rt"
+author: "Thomas P. Vladeck"
+date: "`r lubridate::today()`"
+output:
+  tufte::tufte_html: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tufte)
+```
+
+
+`r newthought("Disclaimer: I am not an epidemiologist")`. Further to [what Kevin said](https://twitter.com/kevin/status/1249584902581837824), I am not going to try and invent a new model, but rather help estimate an already-existing-one, that was developed by epidemiologists. 
+
+`r newthought("The background on this is")` [this post](http://systrom.com/blog/the-metric-we-need-to-manage-covid-19/) (and [this technical notebook](https://github.com/k-sys/covid-19/blob/master/Realtime%20R0.ipynb)) by Kevin Systrom, founder of Instagram, makes the case that we need to have accurate real-time estimates of $R_t$, the [reproduction number](https://www1.health.gov.au/internet/publications/publishing.nsf/Content/mathematical-models~mathematical-models-models.htm~mathematical-models-2.2.htm). 
+
+I think that there are two major ways his approach can be improved. 
+
+## Motivation
+
+1. 
