@@ -133,7 +133,7 @@ theme_set(theme_minimal() +
     panel.background = element_rect(fill = "transparent"), # bg of the panel
     plot.background = element_rect(fill = "#fffff8", color = NA), # bg of the plot
     panel.grid.major = element_blank(), # get rid of major grid
-    legend.background = element_rect(fill = "transparent"), # get rid of legend bg
+    legend.background = element_rect(fill = "transparent", color = "#fffff8"), # get rid of legend bg
     legend.box.background = element_rect(fill = "transparent") # get rid of legend panel bg
   ))
 ```
@@ -226,10 +226,38 @@ Once we've estimated $\sigma$, we can recursively filter and smooth the $\theta$
 
 ```{r}
 mod_fit_filtered = KFS(
-  mod_fit$model, c("state"), c("state"))
+  mod_fit$model, c("state", "mean"), c("state", "mean"))
 ```
 
 <br>
+
+We can inspect how the model fits by comparing our one-step-ahead forecasts of cases with actuals (on a log scale):
+
+```{marginfigure}
+It's important to note that these are true _forecasts_ of the day ahead. They are not _smoothed_ values (which would be trivial to extract as well)
+
+
+The reason is that we want to estimate the true uncertainty that a decision-maker would face, which is regarding the estimate of $R_t$ _in the future_
+```
+
+```{r, warning = F, fig.fullwidth = T, fig.height=4}
+tibble(predictions = mod_fit_filtered$m, 
+       actuals = series[-1]) %>% 
+  mutate_all(~ c(NA, diff(.x))) %>% 
+  mutate(date = dates) %>% 
+  .[-1, ] %>% 
+  gather(-date, key = series, value = value) %>% 
+  ggplot() + 
+  aes(x = date, y = value, color = series) + 
+  geom_line() + 
+  scale_y_log10("") + 
+  scale_color_brewer("", type = "qual", palette = 1) + 
+  theme(legend.position = c(0.2, 0.8))
+```
+
+<br>
+
+Satisfied that the model fits well, we can proceed to estimate where $R_t$ is:
 
 ```{marginfigure}
 Here we extract the estimates of $\theta$ with a traditional 95% confidence interval
