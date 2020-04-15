@@ -295,6 +295,59 @@ The main difference, however, is that the uncertainty in the state space version
 
 - Trend components (both evolving level and slope), and
 - Seasonal components (e.g. day-of-week, which seems to be present in the data)
+- Pooling observations across many different time series
+
+How can we do this? It's fairly trivial using known state space approaches.
+
+Let's add a trend as an example:
+
+We have the mean of our poisson process to be $\lambda = e^\theta$. Our existing model assumed that $\theta$ was simply a varying intercept, but there is no reason that we couldn't set it up as a time-varying trend:
+
+$$\theta_t \sim ~ N(\mu_t, \sigma_\theta)$$
+$$\mu_t \sim ~ N(\mu_{t-1} + \rho_{t-1}, \sigma_\mu)$$
+$$\rho_t \sim ~ N(\rho_{t-1}, \sigma_\rho)$$
+
+with $\rho$ as the slope that varies in time (notice that it's getting added to the level, $\mu$, at every time step)
+
+Here's how to do that in `R` and `KFAS`
+
+```{marginfigure}
+This doesn't noticeably improve this model -- so no need to include it. If we had longer time series, or were pooling different time series, this may have a larger effect.
+```
+
+```{r}
+mod2 = SSModel(
+  itp1 ~ SSMtrend(2, Q = list(NA, NA)), 
+  u = it,
+  distribution = "poisson"
+)
+
+mod2_fit = fitSSM(mod2, c(1,1))
+
+mod2_fit_filtered = KFS(mod2_fit$model, "state")
+
+theta2  = tibble(
+  mean_estimate = mod2_fit_filtered$a[, 1],
+  upper = mean_estimate + 1.96 * sqrt(mod2_fit_filtered$P[1,1,]),
+  lower = mean_estimate - 1.96 * sqrt(mod2_fit_filtered$P[1,1,])
+)[-1, ] # throw away the initial observation
+
+rt2 = theta2 / GAMMA + 1
+
+rt2 %>% 
+  mutate(date = dates) %>% 
+  filter(date > lubridate::ymd("20200301")) %>% 
+  ggplot() + 
+  aes(x = date, y = mean_estimate, ymin = lower, ymax = upper) + 
+  geom_line(color = "grey") + 
+  geom_ribbon(alpha = .5, fill = "grey") + 
+  geom_hline(yintercept = 1) + 
+  labs(y = "Estimate of Rt", x = "") + 
+  scale_y_continuous(breaks = c(1,2,3,4)) +
+  coord_cartesian(ylim=c(NA, 5)) + 
+  NULL
+```
+
 
 `r newthought("Thoughts, questions?")`
 
