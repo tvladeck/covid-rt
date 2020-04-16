@@ -202,6 +202,26 @@ mod = SSModel(
   u = it,
   distribution = "poisson"
 )
+
+mod = SSModel(
+  log(itp1) ~ 1 + log(it), 
+)
+
+mod$P1inf[2, 2] = 0
+mod$a1[2] = 1
+
+mod$Q[1,1,1] = NA
+mod_fit = fitSSM(mod, c(1,1))
+mod_fit_filtered = KFS(mod_fit$model, c("state", "mean"), c("state", "mean"))
+
+cbind(fitted(mod_fit_filtered), log(itp1)) %>% ts.plot(col = c("red", "blue"))
+
+
+theta  = tibble(
+  mean_estimate = mod_fit_filtered$a[, 1],
+  upper = mean_estimate + 1.96 * sqrt(mod_fit_filtered$P[1,1,]),
+  lower = mean_estimate - 1.96 * sqrt(mod_fit_filtered$P[1,1,])
+)[-1, ] # throw away the initial observation
 ```
 
 <br>
@@ -250,7 +270,7 @@ tibble(predictions = mod_fit_filtered$m,
   ggplot() + 
   aes(x = date, y = value, color = series) + 
   geom_line() + 
-  scale_y_log10("New case count") + 
+  scale_y_log10("New case count0") + 
   labs(x = "") + 
   scale_color_brewer("", type = "qual", palette = 1) + 
   theme(legend.position = c(0.2, 0.8))
