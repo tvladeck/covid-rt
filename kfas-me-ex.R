@@ -90,26 +90,59 @@ mod_multivar = SSModel(
   distribution = "poisson"
 )
 
+
+mod_multivar_2 = SSModel(
+  itp1 ~ -1 + SSMcustom(
+    Z = model.matrix(~ 1 + f, data = testdat, contrasts = list(f = "contr.sum")),
+    T = diag(3),
+    R = diag(3),
+    a1 = rep(0, 3),
+    P1 = diag(c(0, rep(1, 2))),
+    P1inf = diag(c(1, rep(0, 2))),
+    Q = diag(3),
+    n = 43
+  ),
+  u = it,
+  distribution = "poisson"
+)
+
 diag(mod_multivar$P1)    = c(0, rep(1, 3))
 diag(mod_multivar$P1inf) = c(1, rep(0, 3))
 
 mod_multivar_fn = function(pars, mod) {
   
   QQ = diag(exp(pars[1:4]))
-  # QQ[1, 2:4] = pars[5:7]
-  # QQ[2:4, 1] = pars[5:7]
-  
   mod$Q[, , 1] = QQ
   
   mod
 
 }
 
-mod_multivar_fit = fitSSM(mod_multivar, rep(-5, 4), mod_multivar_fn, method = "BFGS")
+mod_multivar_2_fn = function(pars, mod) {
+  QQ = diag(exp(pars[1:3]))
+  mod$Q[, , 1] = QQ
+  
+  mod
+}
+
+
+mod_multivar_fit   = fitSSM(mod_multivar, rep(-5, 4), mod_multivar_fn, method = "BFGS")
+mod_multivar_2_fit = fitSSM(mod_multivar_2, rep(-5, 3), mod_multivar_2_fn, method = "BFGS")
+
 
 mod_multivar_filter = KFS(mod_multivar_fit$model, c("state", "mean"), c("state", "mean"))
 
 cbind(fitted(mod_multivar_filter)[, 3], itp1[, 3]) %>% diff %>%  ts.plot()
+
+mod_multivar_2_filter = KFS(mod_multivar_2_fit$model, c("state", "mean"), c("state", "mean"))
+
+cbind(fitted(mod_multivar_2_filter)[, 3], itp1[, 3]) %>% diff %>%  ts.plot()
+
+mod_multivar_2_filter$model$Z[, , 1] %*% mod_multivar_2_filter$alphahat[43, ]
+SEs = c(sum(mod_multivar_2_filter$P[1:2, 1:2, 43]),
+        sum(mod_multivar_2_filter$P[c(1,3), c(1,3), 43]),
+        sum(mod_multivar_2_filter$P[1:3, 1:3, 43])) %>% 
+  sqrt
 
 
 idk = MASS::mvrnorm(n = 1000, mu = c(0, 0), Sigma = mod_multivar_filter$P[1:2, 1:2, 44])
