@@ -394,7 +394,7 @@ ses = 1:(DIM+1) %&gt;%
   cbind.data.frame %&gt;% 
   setNames(colnames(theta)) %&gt;% 
   .[-1, ]</code></pre>
-<p><label for="tufte-mn-11" class="margin-toggle">⊕</label><input type="checkbox" id="tufte-mn-11" class="margin-toggle"><span class="marginnote"><span style="display: block;">Finally, we can compute the upper and lower bounds of <span class="math inline"><span class="math inline">\(\theta\)</span></span>, solve for <span class="math inline"><span class="math inline">\(R_t\)</span></span>, and then map/reduce this into a nicely, tidy dataframe of <span class="math inline"><span class="math inline">\(R_t\)</span></span> by state, timestep, and with upper and lower bounds.</span></span></p>
+<p><label for="tufte-mn-11" class="margin-toggle">⊕</label><input type="checkbox" id="tufte-mn-11" class="margin-toggle"><span class="marginnote"><span style="display: block;">Finally, we can compute the upper and lower bounds of <span class="math inline"><span class="math inline">\(\theta\)</span></span>, solve for <span class="math inline"><span class="math inline">\(R_t\)</span></span>, and then map/reduce this into a nicel tidy dataframe of <span class="math inline"><span class="math inline">\(R_t\)</span></span> by state, timestep, and with upper and lower bounds.</span></span></p>
 <pre class="r"><code>theta_upper = theta + 1.96 * ses
 theta_lower = theta - 1.96 * ses
 
@@ -429,7 +429,7 @@ rts_by_state =
 </div>
 <p><span class="newthought">Thoughts, questions?</span></p>
 <ul>
-<li><a href="www.twitter.com/tvladeck">Get at me on twitter</a></li>
+<li><a href="whttps://ww.twitter.com/tvladeck">Get at me on twitter</a></li>
 <li>My email is <code>tom at gradientmetrics dot com</code></li>
 <li>The code for this <a href="https://github.com/tvladeck/covid-rt">is here</a></li>
 </ul>

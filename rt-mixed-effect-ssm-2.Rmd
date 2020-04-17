@@ -282,7 +282,7 @@ rts_by_state %>%
 
 `r newthought("Thoughts, questions?")`
 
-- [Get at me on twitter](www.twitter.com/tvladeck)
+- [Get at me on twitter](whttps://ww.twitter.com/tvladeck)
 - My email is `tom at gradientmetrics dot com`
 - The code for this [is here](https://github.com/tvladeck/covid-rt)
 
