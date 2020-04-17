@@ -34,7 +34,6 @@ dat_multivar =
 
 itp1 = as.matrix(dat_multivar[-1, 2:ncol(dat_multivar)])
 it = as.matrix(dat_multivar[-nrow(dat_multivar), 2:ncol(dat_multivar)])
-dummy_data = data.frame(intcpt = rep(1, nrow(it)))
 
 observation_matrix = model.matrix(
   ~ 1 + f,
@@ -66,9 +65,10 @@ update_fn = function(pars, mod) {
   mod
 }
 
-tic("starting")
-mod_multivar_fit = fitSSM(mod_multivar, rep(-5, DIM+1), update_fn, method = "BFGS")
-toc()
+# mod_multivar_fit = fitSSM(mod_multivar, rep(-5, DIM+1), update_fn, method = "BFGS")
+# saveRDS(mod_multivar_fit, file = "mod_multivar_fit.rds")
+# takes about 13 minutes to fit
+mod_multivar_fit = readRDS("mod_multivar_fit.rds")
 
 mod_multivar_filtered = KFS(mod_multivar_fit$model, c("state", "mean"), c("state", "mean"))
 
