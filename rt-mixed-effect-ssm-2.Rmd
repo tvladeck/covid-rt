@@ -243,7 +243,7 @@ ses = 1:(DIM+1) %>%
 
 
 ```{marginfigure}
-Finally, we can compute the upper and lower bounds of $\theta$, solve for $R_t$, and then map/reduce this into a nicel tidy dataframe of $R_t$ by state, timestep, and with upper and lower bounds.
+Finally, we can compute the upper and lower bounds of $\theta$, solve for $R_t$, and then map/reduce this into a nice, tidy dataframe of $R_t$ by state, timestep, and with upper and lower bounds.
 ```
 
 ```{r}
@@ -267,7 +267,7 @@ rts_by_state =
 
 `r newthought("And voilà")` we can now plot our estimate of $R_t$, along with associated uncertainty, for every state, over time:
 
-```{r, fig.fullwidth = T}
+```{r fig.fullwidth=T, fig.width=10, fig.height=8}
 rts_by_state %>% 
   ggplot() + 
   aes(x = date, y = mean, ymax = upper, ymin = lower) + 
@@ -282,7 +282,7 @@ rts_by_state %>%
 
 `r newthought("Thoughts, questions?")`
 
-- [Get at me on twitter](whttps://ww.twitter.com/tvladeck)
+- [Get at me on twitter](https://www.twitter.com/tvladeck)
 - My email is `tom at gradientmetrics dot com`
 - The code for this [is here](https://github.com/tvladeck/covid-rt)
 
