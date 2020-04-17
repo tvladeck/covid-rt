@@ -1,0 +1,118 @@
+---
+title: "Extending the State Space Approach with Mixed Effects"
+author: "Thomas P. Vladeck"
+date: "`r lubridate::today()`"
+output:
+  tufte::tufte_html: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tufte)
+library(kableExtra)
+```
+
+
+`r newthought("See [this post](https://tomvladeck.com/2020/04/15/rt-ssm.html) first")`. It outlines the bulk of the derivation of this approach, which is just extended to simultaneously model many geographies here. 
+
+```{marginfigure}
+If you follow [Kevin Systrom's code](https://github.com/k-sys/covid-19/blob/cde1ee8cee7617992281676b5a144db894ddfecb/Realtime%20R0.ipynb) (this points to a specific commit), it appears he's using a pretty cool Gaussian process approach to model a changing $Rt$ 👏
+```
+
+We are going to leverage the fact that the [Kalman Filter](https://en.wikipedia.org/wiki/Kalman_filter) was built to handle multidimensional observations. So, instead of modeling just one time series, we're going to model _all the time series_ at once. 
+
+The so-called "observation equation" of the Kalman Filter is
+
+$$\theta_t = Z_t a_t$$
+
+In the previous post, we were modeling $\theta_t$ as a single value. Here, we're going to model it as a separate value for every state (along with a nationwide average). 
+
+The $a_t$ are going to be our overall and state-level effects. The trick is going to be in how we set up $Z_t$ so that we can identify the model. 
+
+`r newthought("Let's jump into the code")`. First we get our environment set up:
+
+```{marginfigure}
+We need `snakecase` to make the state names easier to work with, and `tictoc` to time some of our code.
+```
+
+```{r, message = F, warning = F}
+library(tidyverse)
+library(KFAS)
+library(zoo)
+library(snakecase)
+library(tictoc)
+```
+
+
+```{r, message = F, warning = F}
+url = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv'
+dat = read_csv(url)
+
+WINDOW = 20
+SERIAL_INTERVAL = 4
+GAMMA = 1 / SERIAL_INTERVAL
+STATES = dat$state %>% unique
+DIM = length(STATES)
+```
+
+```{marginfigure}
+All this does is to reconstruct the cumulative number of cases within the desired `WINDOW` for each of the states. The code is a bit concise and inscrutable, but it works. 
+```
+
+```{r}
+dat_multivar = 
+  dat %>% 
+  filter(state %in% STATES) %>% 
+  select(date, state, cases) %>% 
+  spread(state, cases) %>% 
+  setNames(to_snake_case(colnames(.))) %>% 
+  filter(date > lubridate::ymd("2020-03-01")) %>% 
+  mutate_at(vars(-date), ~ ifelse(is.na(.x), 0, .x)) %>% 
+  mutate_at(vars(-date), function(x) {
+    diff(x) %>% 
+      {. + 1} %>% 
+      {c(rep(0, WINDOW), .)} %>% 
+      rollsum(., WINDOW) 
+  }) %>% 
+  .[-1, ]
+```
+
+```{marginfigure}
+As before, `itp1` if $I_{t + 1}$ and `it` is $I_t$. The only difference is that these are matrix-valued, not vectors
+```
+
+```{r}
+itp1 = as.matrix(dat_multivar[-1, 2:ncol(dat_multivar)])
+it = as.matrix(dat_multivar[-nrow(dat_multivar), 2:ncol(dat_multivar)])
+```
+
+And here is where we construct Z: 
+
+```{r}
+observation_matrix = model.matrix(
+  ~ 1 + f,
+  data = data.frame(f = factor(1:DIM)),
+  contrasts = list(f = "contr.sum")
+)
+```
+
+It's hard to visualize a 55x55 matrix, so let's make a smaller example:
+
+`S this would correspond to the following:
+
+$$\begin{pmatrix}\theta_1 \\ \theta_2 \\ \theta_3 \end{pmatrix} =
+  \begin{pmatrix}1 & 1 & 0 \\ 1 &  0 &  1 \\ 1 & -1 & -1 \end{pmatrix} * 
+  \begin{pmatrix}a_1 \\ a_2 \\ a_3 \end{pmatrix}$$
+  
+But it's easier to think of this as   
+
+$$\begin{pmatrix}New\ York \\ Washington \\ Lousiana \end{pmatrix} =
+  \begin{pmatrix}1 & 1 & 0 \\ 1 &  0 &  1 \\ 1 & -1 & -1 \end{pmatrix} * 
+  \begin{pmatrix}overall\ average \\ state\ effect\ 1 \\ state\ effect\ 2 \end{pmatrix}$$
+
+`r newthought("Thoughts, questions?")`
+
+- [Get at me on twitter](www.twitter.com/tvladeck)
+- My email is `tom at gradientmetrics dot com`
+- The code for this [is here](https://github.com/tvladeck/covid-rt)
+

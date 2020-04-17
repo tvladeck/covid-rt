@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tufte)
 ```
 
+`r newthought("Update:")` Be sure to check out the [update to this post](https://tomvladeck.com/2020/04/16/rt-mixed-effect-ssm.html) where we gratifyingly produce a huge chart with all the states on it.
 
 `r newthought("Disclaimer: I am not an epidemiologist")`. Further to [what Kevin said](https://twitter.com/kevin/status/1249584902581837824), I am not going to try and invent a new model, but rather help estimate [an already-existing-one](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0002185#abstract0), that was developed by epidemiologists. 
 
