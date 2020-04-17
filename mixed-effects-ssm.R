@@ -2,6 +2,7 @@ library(tidyverse)
 library(KFAS)
 library(zoo)
 library(snakecase)
+library(tictoc)
 
 url = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv'
 dat = read_csv(url)
@@ -56,6 +57,8 @@ mod_multivar = SSModel(
   distribution = "poisson"
 )
 
+
+
 update_fn = function(pars, mod) {
   QQ = diag(exp(pars[1:DIM]))
   mod$Q[, , 1] = QQ
@@ -63,12 +66,14 @@ update_fn = function(pars, mod) {
   mod
 }
 
-mod_multivar_fit = fitSSM(mod_multivar, rep(-5, DIM), update_fn, method = "BFGS")
+tic("starting")
+mod_multivar_fit = fitSSM(mod_multivar, rep(-5, DIM+1), update_fn, method = "BFGS")
+toc()
 
 mod_multivar_filtered = KFS(mod_multivar_fit$model, c("state", "mean"), c("state", "mean"))
 
 Z_augment = mod_multivar_filtered$model$Z[, ,1] %>% 
-  rbind("average" = c(1, 0, 0))
+  rbind("average" = c(1, rep(0, DIM-1)))
 
 theta = map(
   1:nrow(it), 
@@ -115,4 +120,5 @@ rts_by_state %>%
   geom_line(color = "grey") + 
   geom_ribbon(alpha = 0.5) + 
   facet_wrap(~ state) + 
-  geom_hline(yintercept = 1)
+  geom_hline(yintercept = 1) +
+  coord_cartesian(ylim = c(-1, 5))
