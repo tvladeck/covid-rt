@@ -9,6 +9,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tufte)
+library(kableExtra)
 ```
 
 
@@ -97,17 +98,7 @@ observation_matrix = model.matrix(
 
 It's hard to visualize a 55x55 matrix, so let's make a smaller example:
 
-<
-```{r}
-ex_obs_matrix = model.matrix(
-  ~ 1 + f,
-  data = data.frame(f = factor(1:3)),
-  contrasts = list(f = "contr.sum")
-)
-```
-
-
-o this would correspond to the following:
+`S this would correspond to the following:
 
 $$\begin{pmatrix}\theta_1 \\ \theta_2 \\ \theta_3 \end{pmatrix} =
   \begin{pmatrix}1 & 1 & 0 \\ 1 &  0 &  1 \\ 1 & -1 & -1 \end{pmatrix} * 
