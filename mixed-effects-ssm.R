@@ -103,10 +103,32 @@ fit = sampling(
 
 post = rstan::extract(fit)
 stan_trace(fit, "shutdown_impact_on_rt[12]")
-stan_dens(fit, "shutdown_impact_on_rt")
+stan_dens(fit, "shutdown_impact_on_rt[20]")
 stan_hist(fit, "shutdown_impact_on_rt[12]")
-print(fit, "shutdown_impact_on_rt[12]")
+print(fit, "shutdown_impact_on_rt")
 
+plot_rt_from_posterior = function(index, post) {
+  
+  state_name = colnames(dat_multivar_with_shutdowns)[index]
+  rt_draws = post$rt[, , index]
+  
+  plot_dat = data.frame(
+    mean = apply(rt_draws, 2, mean),
+    upper = apply(rt_draws, 2, function(x) quantile(x, .95)),
+    lower = apply(rt_draws, 2, function(x) quantile(x, .05)),
+    date = dat_multivar$date[-1]
+  ) %>% 
+    gather(-date, key = series, value = rt)
+  
+  ggplot(plot_dat) + 
+    aes(x = date, y = rt, color = series, lty = series) + 
+    geom_point() + 
+    geom_line() + 
+    scale_color_manual("", values = c("mean" = "red", "lower" = "grey", "upper" = "grey")) + 
+    theme_bw() + 
+    scale_linetype_manual("", values = c("mean" = 1, "lower" = 2, "upper" = 2))
+  
+}
 
 
 # posterior predictive interval
