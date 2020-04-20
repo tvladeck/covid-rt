@@ -97,6 +97,15 @@ dates = dat %>%
   pull(date) %>% 
   .[c(-1,-2)]
 
+shutdown = case_when(
+  dates < lubridate::ymd("2020-03-23") ~ 0,
+  dates > lubridate::ymd("2020-03-30") ~ 1,
+  TRUE ~ as.numeric(difftime(dates, lubridate::ymd("2020-03-23"), units = "days") * (1/7))
+)
+
+write.csv(data.frame(nyc = series), "nyc-series.csv")
+write.csv(data.frame(shutdown = shutdown), "shutdown-series.csv")
+
 ktm1 = series[-length(series)]
 kt = series[-1]
 
