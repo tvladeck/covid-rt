@@ -15,7 +15,7 @@ GAMMA = 1 / SERIAL_INTERVAL
 STATES = dat$state %>% unique
 DIM = length(STATES)
 
-stan_mod = stan_model("impact-of-shutdown.stan")
+stan_mod = stan_model("rt.stan")
 
 
 dat_multivar = 
@@ -85,8 +85,6 @@ shutdown_grid = shutdown_dates %>%
 
 dat_multivar_with_shutdowns = dat_multivar %>% 
   select(names(shutdown_grid))
-
-stan_mod = stan_model("impact-of-shutdown.stan")
 
 fit = sampling(
   stan_mod, 

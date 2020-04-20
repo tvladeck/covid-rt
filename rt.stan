@@ -14,7 +14,6 @@ parameters {
 
 transformed parameters {
   matrix[timesteps-1, states] theta;
-
   real<lower=0> gam;
   matrix[timesteps-1, states] rt;
 
@@ -28,6 +27,8 @@ transformed parameters {
 }
 
 model {
+  
+  serial_interval ~ gamma(6, 1.5);
   
   step_size ~ normal(0, 0.2)T[0, ];
   theta_steps[1, ] ~ normal(0, 1);
