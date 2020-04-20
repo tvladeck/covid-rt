@@ -55,7 +55,16 @@ shutdown_dates =
     louisiana = ymd(20200323),
     maine = ymd(20200402),
     maryland = ymd(20200330),
-    massachusetts = ymd(20200324)
+    massachusetts = ymd(20200324),
+    michigan = ymd(20200324),
+    minnesota =ymd(20200331),
+    mississippi = ymd(20200403),
+    missouri = ymd(20200406),
+    montana = ymd(20200328),
+    nevada = ymd(20200401),
+    new_hampshire = ymd(20200327),
+    new_jersey = ymd(20200321),
+    new_mexico = ymd(20200322)
   )
 
 convert_shutdown_dates_to_date_vector = function(date) {
@@ -77,6 +86,8 @@ shutdown_grid = shutdown_dates %>%
 dat_multivar_with_shutdowns = dat_multivar %>% 
   select(names(shutdown_grid))
 
+stan_mod = stan_model("impact-of-shutdown.stan")
+
 fit = sampling(
   stan_mod, 
   list(
@@ -94,8 +105,6 @@ post = rstan::extract(fit)
 stan_trace(fit, "shutdown_impact_on_rt")
 stan_dens(fit, "shutdown_impact_on_rt")
 print(fit, "shutdown_impact_on_rt")
-
-
 
 
 itp1 = as.matrix(dat_multivar[-1, 2:ncol(dat_multivar)])

@@ -31,7 +31,7 @@ transformed parameters {
   
   theta = intcpt + shutdown_effect * shutdowns[2:timesteps, ];
   rt = theta/gam + 1;
-  shutdown_impact_on_rt = shutdown_effect/gam + 1;
+  shutdown_impact_on_rt = shutdown_effect/gam;
   
 }
 
@@ -39,7 +39,7 @@ model {
   
   shutdown_effect ~ normal(0, .5);
   
-  serial_interval ~ gamma(2, .5);
+  serial_interval ~ gamma(6, 1.5);
   
   sigma ~ normal(0, 0.2)T[0, ];
   intcpt_steps[1, ] ~ normal(0, 1);
