@@ -102,9 +102,77 @@ fit = sampling(
 )
 
 post = rstan::extract(fit)
-stan_trace(fit, "shutdown_impact_on_rt")
+stan_trace(fit, "shutdown_impact_on_rt[12]")
 stan_dens(fit, "shutdown_impact_on_rt")
-print(fit, "shutdown_impact_on_rt")
+stan_hist(fit, "shutdown_impact_on_rt[12]")
+print(fit, "shutdown_impact_on_rt[12]")
+
+
+
+# posterior predictive interval
+exp_theta = post$theta %>% exp
+mu = exp_theta
+
+idk = map(1:dim(exp_theta)[1], function(i) {
+  exp_theta[i, , ] * dat_multivar_with_shutdowns[1:dim(exp_theta)[2], ]
+})
+
+idk2 = map(idk, ~ apply(.x, 2, function(x) {rpois(length(x), x)}))
+  
+  
+idk3 = map(idk2, ~ as.data.frame(.x) %>% mutate(idx = 1:nrow(.)) %>% 
+             gather(-idx, key = state, value = pred_cases))
+
+idk4 = reduce(idk3[1:100], rbind.data.frame)
+for(i in 2:40) {
+  
+  tic(str_c("trying ", i))
+  idk4 = rbind.data.frame(
+    idk4, 
+    reduce(idk3[(100*(i-1)+1):(100*i)], rbind.data.frame)
+  )
+  toc()
+  
+}
+
+idk5 = idk4 %>% 
+  group_by(idx, state) %>% 
+  summarize(
+    pred_cases_05 = quantile(pred_cases, .05),
+    pred_cases_50 = median(pred_cases),
+    pred_cases_95 = quantile(pred_cases, .95)
+  )
+
+idk6 = idk5 %>% 
+  left_join(
+    dat_multivar_with_shutdowns %>% 
+      mutate(idx = 1:nrow(.)) %>% 
+      gather(-idx, key=state, value=actual), 
+    by = c("idx", "state")
+  ) %>% 
+  mutate(in_conf_interval = actual <= pred_cases_95 & actual>=pred_cases_05)
+
+idk6 %>% 
+  filter(state %in% unique(state)[1:5]) %>% 
+  ungroup %>% 
+  group_by(state) %>% 
+  mutate_at(vars(-idx, -state), function(x) c(0, diff(x))) %>% 
+  filter(state %in% unique(state)[1:5]) %>% 
+  ggplot() + 
+  aes(x = idx, y = actual, ymin = pred_cases_05, ymax=pred_cases_95) + 
+  geom_line() + 
+  geom_ribbon(alpha = 0.5, fill = "red") + 
+  facet_wrap(~ state, scales = "free_y")
+
+idk7 = idk6 %>% 
+  gather(-idx, -state, key = series, value=value)
+
+idk7 %>% 
+  ggplot() +
+  aes(x = idx, y = value, color = series)
+
+hist(post$shutdown_impact_on_rt, main = "Shutdown impact on Rt", 
+     xlab = "", ylab = "", col = "lightgrey")
 
 
 itp1 = as.matrix(dat_multivar[-1, 2:ncol(dat_multivar)])
