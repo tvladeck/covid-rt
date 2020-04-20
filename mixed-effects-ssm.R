@@ -3,6 +3,8 @@ library(KFAS)
 library(zoo)
 library(snakecase)
 library(tictoc)
+library(lubridate)
+library(rstan)
 
 url = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv'
 dat = read_csv(url)
@@ -31,6 +33,54 @@ dat_multivar =
   }) %>% 
   .[-1, ]
 
+
+shutdown_dates = 
+  list(
+    alabama = ymd(20200404),
+    alaska = ymd(20200328),
+    california = ymd(20200319),
+    colorado = ymd(20200326),
+    connecticut = ymd(20200323),
+    delaware = ymd(20200324),
+    district_of_columbia = ymd(20200401),
+    florida = ymd(20200403)
+  )
+
+convert_shutdown_dates_to_date_vector = function(date) {
+  
+  case_when(
+    dat_multivar$date < date ~ 0,
+    dat_multivar$date > date + days(7) ~ 1,
+    TRUE ~ as.numeric(difftime(dat_multivar$date, date, units = "days")) * 1/7
+  )
+  
+}
+
+shutdown_grid = shutdown_dates %>% 
+  map(~ convert_shutdown_dates_to_date_vector(.x)) %>% 
+  reduce(cbind.data.frame) %>% 
+  setNames(names(shutdown_dates))
+
+
+dat_multivar_with_shutdowns = dat_multivar %>% 
+  select(names(shutdown_grid))
+
+stan_mod = stan_model("impact-of-shutdown.stan")
+
+fit = sampling(
+  stan_mod, 
+  list(
+    timesteps = nrow(dat_multivar_with_shutdowns),
+    states = ncol(dat_multivar_with_shutdowns),
+    cases = dat_multivar_with_shutdowns,
+    shutdowns = shutdown_grid
+  ),
+  chains = 2,
+  cores = 2,
+  iter = 3000
+)
+
+post = rstan::extract(fit)
 
 itp1 = as.matrix(dat_multivar[-1, 2:ncol(dat_multivar)])
 it = as.matrix(dat_multivar[-nrow(dat_multivar), 2:ncol(dat_multivar)])
