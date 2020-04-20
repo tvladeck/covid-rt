@@ -5,5 +5,6 @@ library(snakecase)
 library(tictoc)
 library(lubridate)
 library(rstan)
+library(patchwork)
 
 for(f in list.files("R", full.names = T)) source(f)
