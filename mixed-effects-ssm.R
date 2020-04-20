@@ -77,7 +77,7 @@ fit = sampling(
   ),
   chains = 2,
   cores = 2,
-  iter = 3000
+  iter = 4000
 )
 
 post = rstan::extract(fit)
