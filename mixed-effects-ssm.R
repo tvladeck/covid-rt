@@ -15,6 +15,7 @@ GAMMA = 1 / SERIAL_INTERVAL
 STATES = dat$state %>% unique
 DIM = length(STATES)
 
+stan_mod = stan_model("impact-of-shutdown.stan")
 
 
 dat_multivar = 
@@ -43,7 +44,18 @@ shutdown_dates =
     connecticut = ymd(20200323),
     delaware = ymd(20200324),
     district_of_columbia = ymd(20200401),
-    florida = ymd(20200403)
+    florida = ymd(20200403),
+    georgia = ymd(20200403),
+    hawaii = ymd(20200325),
+    idaho = ymd(20200325),
+    illinois = ymd(20200321),
+    indiana = ymd(20200324),
+    kansas = ymd(20200330),
+    kentucky = ymd(20200326),
+    louisiana = ymd(20200323),
+    maine = ymd(20200402),
+    maryland = ymd(20200330),
+    massachusetts = ymd(20200324)
   )
 
 convert_shutdown_dates_to_date_vector = function(date) {
@@ -65,8 +77,6 @@ shutdown_grid = shutdown_dates %>%
 dat_multivar_with_shutdowns = dat_multivar %>% 
   select(names(shutdown_grid))
 
-stan_mod = stan_model("impact-of-shutdown.stan")
-
 fit = sampling(
   stan_mod, 
   list(
@@ -81,6 +91,12 @@ fit = sampling(
 )
 
 post = rstan::extract(fit)
+stan_trace(fit, "shutdown_impact_on_rt")
+stan_dens(fit, "shutdown_impact_on_rt")
+print(fit, "shutdown_impact_on_rt")
+
+
+
 
 itp1 = as.matrix(dat_multivar[-1, 2:ncol(dat_multivar)])
 it = as.matrix(dat_multivar[-nrow(dat_multivar), 2:ncol(dat_multivar)])

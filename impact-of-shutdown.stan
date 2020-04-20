@@ -13,7 +13,7 @@ parameters {
   real<lower=0> sigma;
   matrix[timesteps-1, states] intcpt_steps;
   
-  real impact_of_shutdown;
+  real shutdown_effect;
 }
 
 transformed parameters {
@@ -21,6 +21,7 @@ transformed parameters {
   matrix[timesteps-1, states] intcpt;
   real<lower=0> gam;
   matrix[timesteps-1, states] rt;
+  real shutdown_impact_on_rt;
   
   gam = 1/serial_interval;
   
@@ -28,14 +29,15 @@ transformed parameters {
     intcpt[, s] = cumulative_sum(intcpt_steps[, s]);
   }
   
-  theta = intcpt + impact_of_shutdown * shutdowns[2:timesteps, ];
+  theta = intcpt + shutdown_effect * shutdowns[2:timesteps, ];
   rt = theta/gam + 1;
+  shutdown_impact_on_rt = shutdown_effect/gam + 1;
   
 }
 
 model {
   
-  impact_of_shutdown ~ normal(0, .5);
+  shutdown_effect ~ normal(0, .5);
   
   serial_interval ~ gamma(2, .5);
   
