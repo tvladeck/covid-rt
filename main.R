@@ -1,7 +1,41 @@
 for(f in list.files("scripts", full.names = T)) source(f)
 
+
+a = stan_data$cases %>% 
+  mutate_all(~ c(NA, diff(.x)/cum_p_observed[-nrow(stan_data$cases)])) %>% 
+  .[-1, ] %>% 
+  mutate_all(~ c(NA, .x[-1]/.x[-(nrow(stan_data$cases)-1)]))
+
+
+stan_mod = stan_model("stan_models/rt-v2.stan")
+
+dat_frame = dat_diff[, 2:10]
+
+stan_data = list(
+  timesteps = nrow(dat_frame),
+  states = ncol(dat_frame),
+  cases = dat_frame,
+  n = nrow(delay), 
+  timing = as.numeric(delay$delta),
+  MAX_COUNT = dat_frame %>% max * 100
+)
+
+
+fit = sampling(
+  stan_mod, 
+  stan_data,
+  chains = 2,
+  cores = 2,
+  iter = 4000
+)
+
+post=rstan::extract(fit)
+
+post$expected_counts
+
+
 # stan_mod = stan_model("stan_models/impact-of-shutdown.stan")
-stan_mod = stan_model("stan_models/rt.stan")
+# stan_mod = stan_model("stan_models/rt.stan")
 
 fit = sampling(
   stan_mod, 
