@@ -1,11 +1,7 @@
 dat = read_csv(url)
 linelist = NCoVUtils::get_linelist()
 
-shutdown_grid = 
-  shutdown_dates %>% 
-  map(~ convert_shutdown_dates_to_date_vector(.x)) %>% 
-  reduce(cbind.data.frame) %>% 
-  setNames(names(shutdown_dates))
+
 
 delay = 
   linelist %>% 
@@ -30,13 +26,19 @@ dat_diff =
   mutate_at(vars(-date), ~ c(NA, diff(.x))) %>% 
   .[-1, ]
 
+shutdown_grid = 
+  shutdown_dates %>% 
+  map(~ convert_shutdown_dates_to_date_vector(.x, dat_diff)) %>% 
+  reduce(cbind.data.frame) %>% 
+  setNames(names(shutdown_dates))
 
 dat_recompiled = 
   dat_diff %>% 
   select(-date) %>% 
-  map(~ round(apply_1d_filter_rev_pad(empirical_timing_dist, .x))) %>% 
-  map(~ c(rep(0, 19), .x)) %>% 
-  map_df(~ rollsum(.x, 20)) 
+  map_df(~ round(apply_1d_filter_rev_pad(empirical_timing_dist, .x))) %>% 
+  # map(~ c(rep(0, 19), .x)) %>% 
+  # map_df(~ rollsum(.x, 20)) 
+  identity()
 
 date_vector = dat_diff$date[1:nrow(dat_recompiled)]
 
@@ -46,11 +48,15 @@ dat_recompiled_with_shutdowns =
   dat_recompiled %>% 
   select(colnames(shutdown_grid_capped))
 
+cum_p_observed = convert_filter_to_cumsum(empirical_timing_dist, nrow(dat_recompiled_with_shutdowns))
+
 stan_data = list(
   timesteps = nrow(dat_recompiled_with_shutdowns),
   states = ncol(dat_recompiled_with_shutdowns),
   cases = dat_recompiled_with_shutdowns,
   shutdowns = shutdown_grid_capped,
+  cum_p_observed = cum_p_observed,
+  window = 20,
   simulation_steps = 15
 )
 

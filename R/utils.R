@@ -1,8 +1,9 @@
-convert_shutdown_dates_to_date_vector = function(date) {
+convert_shutdown_dates_to_date_vector = function(date, dat, burn_in = 7) {
   
   case_when(
-    dat_multivar$date < date ~ 0,
-    dat_multivar$date >= date ~ 1
+    dat$date < date ~ 0,
+    dat$date >= date & dat$date < date + days(burn_in) ~ 1,
+    dat$date >= date + days(burn_in) ~ 1/burn_in * as.numeric(difftime(dat$date, date, units = "days"))
   )
   
 }
@@ -109,7 +110,7 @@ apply_1d_filter = function(fil, ser) {
   
 }
 
-apply_1d_filter_rev_pad = function(fil, ser, min_fil_len = 15, cap = T) {
+apply_1d_filter_rev_pad = function(fil, ser, min_fil_len = 15, cap = F) {
   
   lfil = length(fil)
   lser = length(ser)
@@ -117,10 +118,26 @@ apply_1d_filter_rev_pad = function(fil, ser, min_fil_len = 15, cap = T) {
   
   ser2 = rev(c(rep(0, min_fil_len-1), ser))
   
-  if(cap) lfin = lser-min_fil_len else lfin = lser2
+  if(cap) lfin = lser-min_fil_len else lfin = lser
   
   r = rev(apply_1d_filter(fil, ser2))[1:lfin]
   
   return(r)
   
 }
+
+convert_filter_to_cumsum = function(fil, len) {
+  lfil = length(fil)
+  
+  if(len <= lfil) {
+    r = cumsum(fil)[1:len]
+  } else {
+    r = c(cumsum(fil), rep(1, len-lfil))  
+  }
+  
+  p = rev(r)
+  
+  return(p)
+}
+
+
