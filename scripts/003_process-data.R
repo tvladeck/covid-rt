@@ -36,9 +36,9 @@ dat_recompiled =
   dat_diff %>% 
   select(-date) %>% 
   map_df(~ round(apply_1d_filter_rev_pad(empirical_timing_dist, .x))) %>% 
-  # map(~ c(rep(0, 19), .x)) %>% 
-  # map_df(~ rollsum(.x, 20)) 
-  identity()
+  map(~ c(rep(0, 19), .x)) %>%
+  map_df(~ rollsum(.x, 20))
+  # identity()
 
 date_vector = dat_diff$date[1:nrow(dat_recompiled)]
 

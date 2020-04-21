@@ -8,27 +8,6 @@ data {
   
 } 
 
-transformed data {
-  matrix[timesteps, states] scaled_cases;
-  int cum_cases[timesteps, states];
-  matrix[timesteps, states] cum_scaled_cases;
-  
-  for(s in 1:states) {
-    scaled_cases[, s] = to_vector(cases[, s]) ./ cum_p_observed;    
-    for(t in 1:timesteps) {
-      int idx_low = max(1, t-window+1);
-      // leaving this here as a note to myself
-      // we can do the math either way, with cumulatives or diffs
-      // but with diffs we only have to worry about scaling _on that day_
-      // not about integrating the scaling vector across the vector of diffs 
-      // to get the cumulative amount
-      cum_cases[t, s] = sum(cases[idx_low:t, s]);
-      cum_scaled_cases[t, s] = sum(scaled_cases[idx_low:t, s]);
-    }
-  }
-  
-}
-
 parameters {
   real<lower=0> serial_interval;
   real<lower=0> step_size;
@@ -60,7 +39,7 @@ model {
   for(t in 2:timesteps) {
     for(s in 1:states) {
       real mu;
-      real expected_cases = cum_p_observed[t] * scaled_cases[t-1, s] * exp(theta[t-1, s]);
+      real expected_cases = cases[t-1, s] * exp(theta[t-1, s]);
       mu = fmax(expected_cases, 0.1); // guard against log(0) errors with init case
       cases[t, s] ~ poisson(mu);
     } 

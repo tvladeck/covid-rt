@@ -110,7 +110,7 @@ apply_1d_filter = function(fil, ser) {
   
 }
 
-apply_1d_filter_rev_pad = function(fil, ser, min_fil_len = 15, cap = F) {
+apply_1d_filter_rev_pad = function(fil, ser, min_fil_len = 15, cap = T) {
   
   lfil = length(fil)
   lser = length(ser)
