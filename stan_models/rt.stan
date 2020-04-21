@@ -36,7 +36,9 @@ model {
   
   for(t in 2:timesteps) {
     for(s in 1:states) {
-      cases[t, s] ~ poisson(cases[t-1, s] * exp(theta[t-1, s]));
+      real mu;
+      mu = fmax(cases[t-1, s] * exp(theta[t-1, s]), 0.1); // guard against log(0) errors with init case
+      cases[t, s] ~ poisson(mu);
     } 
   }
   

@@ -4,6 +4,7 @@ data {
   int states;
   int cases[timesteps, states];
   matrix[timesteps, states] shutdowns;
+  int simulation_steps;
   
 } 
 
@@ -51,20 +52,21 @@ model {
   
   for(t in 2:timesteps) {
     for(s in 1:states) {
-      cases[t, s] ~ poisson(cases[t-1, s] * exp(theta[t-1, s]));
+      real mu;
+      mu = fmax(cases[t-1, s] * exp(theta[t-1, s]), 0.1); // guard against log(0) errors with init case
+      cases[t, s] ~ poisson(mu);
     } 
   }
   
 }
 
 generated quantities {
-  // matrix[timesteps-1, states] pred_cases; 
-  // 
-  // for(t in 1:(timesteps-1)) {
-  //   for(s in 1:states) {
-  //     pred_cases[t, s] = poisson_rng(cases[t, s] * exp(theta[t, s]));
-  //   } 
-  // }
+  matrix[simulation_steps, states] theta_forward;
+
+  for(s in 1:states) {
+    theta_forward[, s] = theta[timesteps-1, s] + 
+      to_vector(cumulative_sum(normal_rng(rep_vector(0, simulation_steps), step_size)));
+  }
   
 }
 

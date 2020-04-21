@@ -2,13 +2,12 @@ convert_shutdown_dates_to_date_vector = function(date) {
   
   case_when(
     dat_multivar$date < date ~ 0,
-    dat_multivar$date > date + days(7) ~ 1,
-    TRUE ~ as.numeric(difftime(dat_multivar$date, date, units = "days")) * 1/7
+    dat_multivar$date >= date ~ 1
   )
   
 }
 
-summarize_rt_from_posterior = function(post) {
+summarize_rt_from_posterior = function(post, orig_dat, date_vec) {
   
   mean_mtx  = post$rt %>% apply(c(2,3), mean)
   upper_mtx = post$rt %>% apply(c(2,3), function(x) quantile(x, .95))
@@ -18,8 +17,8 @@ summarize_rt_from_posterior = function(post) {
     map2(c("mean", "upper", "lower"), 
          ~ .x %>% 
            as.data.frame %>% 
-           setNames(colnames(dat_multivar_with_shutdowns)) %>% 
-           mutate(date = dat_multivar$date[-1]) %>% 
+           setNames(colnames(orig_dat)) %>% 
+           mutate(date = date_vector[-1]) %>% 
            gather(-date, key = state, value = !!.y)) %>% 
     reduce(~ left_join(.x, .y, by = c("date", "state")))
   
@@ -27,9 +26,9 @@ summarize_rt_from_posterior = function(post) {
   
 }
 
-plot_rt_from_posterior = function(post) {
+plot_rt_from_posterior = function(...) {
   s = 
-    summarize_rt_from_posterior(post) %>% 
+    summarize_rt_from_posterior(...) %>% 
     gather(-date, -state, key = series, value = rt)
   
   
@@ -91,4 +90,37 @@ check_pp = function(post, dat_grid) {
     ) 
   
   return(idk6)
+}
+
+
+apply_1d_filter = function(fil, ser) {
+  
+  lser = length(ser)
+  lfil = length(fil)
+  
+  newser = rep(0, lser)
+  
+  for(i in 1:lser) {
+    idx = i:min(i+lfil-1, lser)
+    newser[idx] = newser[idx] + ser[i] * fil[1:length(idx)]
+  }
+  
+  return(newser)
+  
+}
+
+apply_1d_filter_rev_pad = function(fil, ser, min_fil_len = 15, cap = T) {
+  
+  lfil = length(fil)
+  lser = length(ser)
+  
+  
+  ser2 = rev(c(rep(0, min_fil_len-1), ser))
+  
+  if(cap) lfin = lser-min_fil_len else lfin = lser2
+  
+  r = rev(apply_1d_filter(fil, ser2))[1:lfin]
+  
+  return(r)
+  
 }

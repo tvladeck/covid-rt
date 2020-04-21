@@ -1,22 +1,5 @@
 dat = read_csv(url)
-
-
-dat_multivar = 
-  dat %>% 
-  filter(state %in% STATES) %>% 
-  select(date, state, cases) %>% 
-  spread(state, cases) %>% 
-  setNames(to_snake_case(colnames(.))) %>% 
-  filter(date > lubridate::ymd("2020-03-01")) %>% 
-  mutate_at(vars(-date), ~ ifelse(is.na(.x), 0, .x)) %>% 
-  mutate_at(vars(-date), function(x) {
-    diff(x) %>% 
-      {. + 1} %>% 
-      {c(rep(0, WINDOW), .)} %>% 
-      rollsum(., WINDOW) 
-  }) %>% 
-  .[-1, ]
-
+linelist = NCoVUtils::get_linelist()
 
 shutdown_grid = 
   shutdown_dates %>% 
@@ -24,15 +7,50 @@ shutdown_grid =
   reduce(cbind.data.frame) %>% 
   setNames(names(shutdown_dates))
 
+delay = 
+  linelist %>% 
+  select(date_onset_symptoms, date_confirmation) %>% 
+  na.omit %>% 
+  mutate(delta = difftime(date_confirmation, date_onset_symptoms, units = "days")) %>% 
+  filter(delta > 0)
 
-dat_multivar_with_shutdowns = 
-  dat_multivar %>% 
-  select(names(shutdown_grid))
+empirical_timing_dist = 
+  delay$delta %>% 
+  ceiling %>% 
+  table %>% 
+  prop.table 
 
+dat_diff = 
+  dat %>% 
+  select(date, state, cases) %>% 
+  spread(state, cases) %>% 
+  setNames(to_snake_case(colnames(.))) %>% 
+  filter(date > lubridate::ymd("2020-03-01")) %>% 
+  mutate_at(vars(-date), ~ ifelse(is.na(.x), 0, .x)) %>% 
+  mutate_at(vars(-date), ~ c(NA, diff(.x))) %>% 
+  .[-1, ]
+
+
+dat_recompiled = 
+  dat_diff %>% 
+  select(-date) %>% 
+  map(~ round(apply_1d_filter_rev_pad(empirical_timing_dist, .x))) %>% 
+  map(~ c(rep(0, 19), .x)) %>% 
+  map_df(~ rollsum(.x, 20)) 
+
+date_vector = dat_diff$date[1:nrow(dat_recompiled)]
+
+shutdown_grid_capped = shutdown_grid[1:nrow(dat_recompiled), ]
+
+dat_recompiled_with_shutdowns = 
+  dat_recompiled %>% 
+  select(colnames(shutdown_grid_capped))
 
 stan_data = list(
-  timesteps = nrow(dat_multivar_with_shutdowns),
-  states = ncol(dat_multivar_with_shutdowns),
-  cases = dat_multivar_with_shutdowns,
-  shutdowns = shutdown_grid
+  timesteps = nrow(dat_recompiled_with_shutdowns),
+  states = ncol(dat_recompiled_with_shutdowns),
+  cases = dat_recompiled_with_shutdowns,
+  shutdowns = shutdown_grid_capped,
+  simulation_steps = 15
 )
+
