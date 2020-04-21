@@ -43,6 +43,7 @@ plot_rt_from_posterior = function(...) {
     scale_linetype_manual("", values = c("mean" = 1, "lower" = 2, "upper" = 2)) + 
     theme(legend.position = "none") + 
     labs(y = "Rt", x = "") + 
+    geom_hline(yintercept = 1) + 
     facet_wrap(~ state)
   
 }
@@ -120,7 +121,7 @@ apply_1d_filter_rev_pad = function(fil, ser, min_fil_len = 15, cap = F) {
   
   if(cap) lfin = lser-min_fil_len else lfin = lser
   
-  r = rev(apply_1d_filter(fil, ser2))[1:lfin]
+  r = rev(apply_1d_filter(fil, ser2)[1:lfin])
   
   return(r)
   
