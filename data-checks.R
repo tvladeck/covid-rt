@@ -1,20 +1,36 @@
 
-# does our filter work? ---------------------------------------------------
-
-scaled_california_cases = stan_data$cases$california/cum_p_observed
 
 fil = empirical_timing_dist
 
 cbind(
   apply_1d_filter_rev_pad(fil, dat_diff$california),
+  (apply_1d_filter_rev_pad(fil, dat_diff$california) / cum_p_observed),
   dat_diff$california
+) %>% 
+  ts.plot(col = c("black", "darkblue", "darkred"), lty = c(1, 2, 3), main = "CA")
+
+legend("topleft", c("Filtered", "Adjusted", "Diffed"), col = c("black", "darkblue", "darkred"), lty = c(1, 2, 3))
+
+
+
+
+# does our filter work? ---------------------------------------------------
+
+# scaled_california_cases = stan_data$cases$california/cum_p_observed
+
+fil = empirical_timing_dist
+
+cbind(
+  apply_1d_filter_rev_pad(fil, dat_diff$washington),
+  dat_diff$washington
 ) %>% 
   ts.plot(col = c("red", "blue"))
 
 cbind(
   filtered = apply_1d_filter_rev_pad(fil, dat_diff$california)[-1],
   ratio = cum_p_observed[-1]*(apply_1d_filter_rev_pad(fil, dat_diff$california) / cum_p_observed)[-48]
-)
+) %>% 
+  ts.plot(col = c("red", "blue"))
 
 
 # how does this compare vs. previous estimates? ---------------------------

@@ -8,6 +8,27 @@ convert_shutdown_dates_to_date_vector = function(date, dat, burn_in = 7) {
   
 }
 
+
+summarize_par_from_posterior = function(par, post, orig_dat, date_vec) {
+  
+  mean_mtx  = post[[par]] %>% apply(c(2,3), mean)
+  upper_mtx = post[[par]] %>% apply(c(2,3), function(x) quantile(x, .95))
+  lower_mtx = post[[par]] %>% apply(c(2,3), function(x) quantile(x, .05))
+  
+  r = list(mean_mtx, upper_mtx, lower_mtx) %>% 
+    map2(c("mean", "upper", "lower"), 
+         ~ .x %>% 
+           as.data.frame %>% 
+           setNames(colnames(orig_dat)) %>% 
+           mutate(date = date_vec[-1]) %>% 
+           gather(-date, key = state, value = !!.y)) %>% 
+    reduce(~ left_join(.x, .y, by = c("date", "state")))
+  
+  return(r)
+  
+}
+
+
 summarize_rt_from_posterior = function(post, orig_dat, date_vec) {
   
   mean_mtx  = post$rt %>% apply(c(2,3), mean)
@@ -19,12 +40,34 @@ summarize_rt_from_posterior = function(post, orig_dat, date_vec) {
          ~ .x %>% 
            as.data.frame %>% 
            setNames(colnames(orig_dat)) %>% 
-           mutate(date = date_vector[-1]) %>% 
+           mutate(date = date_vec[-1]) %>% 
            gather(-date, key = state, value = !!.y)) %>% 
     reduce(~ left_join(.x, .y, by = c("date", "state")))
   
   return(r)
   
+}
+
+
+plot_par_from_posterior = function(...) {
+  s = summarize_par_from_posterior(...)
+  args = list(...)
+  .plot_par(args[[1]], s)
+}
+
+.plot_par = function(pt, s) {
+ 
+  ggplot(s) + 
+    aes(x = date, y = rt, color = series, lty = series) + 
+    geom_point(size = .1) + 
+    geom_line() + 
+    scale_color_manual("", values = c("mean" = "red", "lower" = "grey", "upper" = "grey")) + 
+    theme_bw() + 
+    scale_linetype_manual("", values = c("mean" = 1, "lower" = 2, "upper" = 2)) + 
+    theme(legend.position = "none") + 
+    labs(y = to_title_case(pt), x = "") + 
+    geom_hline(yintercept = 1) + 
+    facet_wrap(~ state)
 }
 
 plot_rt_from_posterior = function(...) {
@@ -46,6 +89,27 @@ plot_rt_from_posterior = function(...) {
     geom_hline(yintercept = 1) + 
     facet_wrap(~ state)
   
+}
+
+plot_state_rt_from_posterior = function(state_name, ...) {
+  s = 
+    summarize_rt_from_posterior(...) %>% 
+    gather(-date, -state, key = series, value = rt) %>% 
+    filter(state == !!state_name)
+  
+  
+  
+  ggplot(s) + 
+    aes(x = date, y = rt, color = series, lty = series) + 
+    geom_point(size = .1) + 
+    geom_line() + 
+    scale_color_manual("", values = c("mean" = "red", "lower" = "grey", "upper" = "grey")) + 
+    theme_bw() + 
+    scale_linetype_manual("", values = c("mean" = 1, "lower" = 2, "upper" = 2)) + 
+    theme(legend.position = "none") + 
+    labs(y = "Rt", x = "") + 
+    geom_hline(yintercept = 1) + 
+    facet_wrap(~ state)
 }
 
 check_pp = function(post, dat_grid) {
