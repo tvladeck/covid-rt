@@ -1,9 +1,4 @@
-// to do
-// - bring the timing distribution into stan with the line list
-// - do the convolution in stan as well
-//   - this will make the dependent var a parameter
-//   - https://www.youtube.com/watch?v=KOIudAB6vJ0
-//   - or can i just round it s.t. i get an int? 
+// https://mc-stan.org/docs/2_23/stan-users-guide/fit-gp-section.html
 
 data {
 
@@ -17,7 +12,8 @@ data {
 transformed data {
   int N = timesteps-1;
   real x[N];
-  vector[N] mu = rep_vector(0, N);
+  real delta = 1e-9;
+  
   
   for(i in 1:N) x[i] = 1;
 }
@@ -29,6 +25,9 @@ parameters {
   real<lower=0> rho;
   real<lower=0> alpha;
   real<lower=0> sigma;
+  vector[N] eta;
+  
+  
 }
 
 transformed parameters {
@@ -41,22 +40,25 @@ transformed parameters {
 
 model {
   
-  matrix[N, N] L_K;
-  matrix[N, N] K = cov_exp_quad(x, alpha, rho);
-  real sq_sigma = square(sigma);
+  vector[N] f;
+  {
+    matrix[N, N] L_K;
+    matrix[N, N] K = cov_exp_quad(x, alpha, rho);
 
-  // diagonal elements
-  for (n in 1:N)
-    K[n, n] = K[n, n] + sq_sigma;
+    // diagonal elements
+    for (n in 1:N)
+      K[n, n] = K[n, n] + delta;
 
-  L_K = cholesky_decompose(K);
+    L_K = cholesky_decompose(K);
+    f = L_K * eta;
+  }
 
   rho ~ inv_gamma(5, 5);
   alpha ~ std_normal();
   sigma ~ std_normal();
+  eta ~ std_normal();
   
-  for(s in 1:states) theta[, s] ~ multi_normal_cholesky(mu, L_K);
-  
+  for(s in 1:states) theta[, s] ~ normal(f, sigma);
   
   serial_interval ~ gamma(6, 1.5);
   
@@ -73,17 +75,6 @@ model {
       cases[t, s] ~ poisson(muhat);
     } 
   }
-  
-}
-
-generated quantities {
-  // matrix[timesteps-1, states] pred_cases; 
-  // 
-  // for(t in 1:(timesteps-1)) {
-  //   for(s in 1:states) {
-  //     pred_cases[t, s] = poisson_rng(cases[t, s] * exp(theta[t, s]));
-  //   } 
-  // }
   
 }
 
