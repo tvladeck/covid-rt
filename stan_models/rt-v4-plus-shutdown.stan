@@ -18,7 +18,7 @@ data {
 parameters {
   real<lower=0> serial_interval;
   
-  real log_step_size;
+  real<lower=0> step_size;
   
   matrix[timesteps-1, states] intcpt_steps;
   
@@ -30,8 +30,7 @@ parameters {
 transformed parameters {
   real<lower=0> gam;
   matrix[timesteps-1, states] rt;
-  
-  real<lower=0> step_size = exp(log_step_size);
+
   matrix[timesteps-1, states] theta;
   matrix[timesteps-1, states] intcpt;
   
@@ -59,8 +58,9 @@ model {
   
   serial_interval ~ gamma(6, 1.5);
   
-  log_step_size ~ normal(0, 10);
-  intcpt_steps[1, ] ~ normal(0, 1);
+  step_size ~ normal(0, 0.05);
+  
+  intcpt_steps[1, ] ~ normal(2, 2);
   to_vector(intcpt_steps[2:(timesteps-1), ]) ~ normal(0, step_size);
   
   for(t in 2:timesteps) {

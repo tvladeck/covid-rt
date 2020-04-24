@@ -38,10 +38,9 @@ dat_diff =
 
 shutdown_grid = 
   shutdown_dates %>% 
-  map(~ convert_shutdown_dates_to_date_vector(.x, dat_diff, 3)) %>% 
+  map(~ convert_shutdown_dates_to_date_vector(.x, dat_diff, 7)) %>% 
   reduce(cbind.data.frame) %>% 
-  setNames(names(shutdown_dates)) %>% 
-  select(1:20)
+  setNames(names(shutdown_dates)) 
 
 dat_recompiled = 
   dat_diff %>% 
