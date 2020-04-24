@@ -15,7 +15,7 @@ transformed data {
   real delta = 1e-9;
   
   
-  for(i in 1:N) x[i] = 1;
+  for(i in 1:N) x[i] = i;
 }
 
 parameters {
