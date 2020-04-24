@@ -51,14 +51,17 @@ dat_recompiled =
   # map_df(~ rollsum(.x, 20))
   identity()
 
-date_vector = dat_diff$date[1:nrow(dat_recompiled)]
+
 
 shutdown_grid_capped = shutdown_grid %>% 
   slice(1:nrow(dat_recompiled))
 
 dat_recompiled_with_shutdowns = 
   dat_recompiled %>% 
-  select(colnames(shutdown_grid_capped)) 
+  select(colnames(shutdown_grid_capped)) %>% 
+  identity()
+
+date_vector = dat_diff$date[1:nrow(dat_recompiled_with_shutdowns)]
   
 cum_p_observed = convert_filter_to_cumsum(empirical_timing_dist, nrow(dat_recompiled_with_shutdowns))
 
