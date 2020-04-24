@@ -11,6 +11,10 @@ data {
   int states;
   int cases[timesteps, states]; // diffed & convolved // eventually move this to xformed parameters
   vector[timesteps] cum_p_observed; // make this estimated given timing block
+  real init_theta_mean;
+  real init_theta_sd;
+  // real gamma_shape;
+  // real gamma_rate;
   
 } 
 
@@ -36,10 +40,15 @@ transformed parameters {
 
 model {
   
-  serial_interval ~ gamma(6, 1.5);
+  // https://epiforecasts.io/covid/
+  // an uncertain serial interval with a mean of 4.7 days (95% CrI: 3.7, 6.0) 
+  // and a standard deviation of 2.9 days (95% CrI: 1.9, 4.9) [7] .
+  serial_interval ~ gamma(2.626635, 0.5588585);
   
   step_size ~ normal(0, 0.2)T[0, ];
-  theta_steps[1, ] ~ normal(0, 1);
+  
+  
+  theta_steps[1, ] ~ normal(init_theta_mean, init_theta_sd);
   to_vector(theta_steps[2:(timesteps-1), ]) ~ normal(0, step_size);
   
   for(t in 2:timesteps) {
