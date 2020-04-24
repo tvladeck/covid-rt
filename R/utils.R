@@ -2,8 +2,8 @@ convert_shutdown_dates_to_date_vector = function(date, dat, burn_in = 7) {
   
   case_when(
     dat$date < date ~ 0,
-    dat$date >= date & dat$date < date + days(burn_in) ~ 1,
-    dat$date >= date + days(burn_in) ~ 1/burn_in * as.numeric(difftime(dat$date, date, units = "days"))
+    dat$date >= date & dat$date <= date + days(burn_in) ~ 1/burn_in * as.numeric(difftime(dat$date, date, units = "days")),
+    dat$date > date + days(burn_in) ~  1# 
   )
   
 }
