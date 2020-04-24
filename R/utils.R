@@ -216,4 +216,43 @@ convert_filter_to_cumsum = function(fil, len) {
   return(p)
 }
 
+match_moments_gamma = function(mean, sd) {
+  
+  # https://math.stackexchange.com/questions/1810257/gamma-functions-mean-and-standard-deviation-through-shape-and-rate
+  
+  list(
+    shape = (mean/sd)^2,
+    rate = mean/(sd^2)
+  )
+  
+}
+
+match_moments_rt = function(des_mean, des_sd, gamma_mean = 4.7, gamma_sd = 2.9) {
+  
+  gamma_params = match_moments_gamma(gamma_mean, gamma_sd)
+  
+  si_draws = rgamma(10000, gamma_params$shape, gamma_params$rate)
+  gamma_draws = 1/si_draws
+  normal_draws = rnorm(10000)
+  
+  
+  optim_function = function(par) {
+    theta_mean = par[1]
+    theta_sd = par[2]
+    
+    adj_normal  = normal_draws * theta_sd + theta_mean
+    
+    vec = 1 + adj_normal / gamma_draws
+      
+    m = mean(vec)
+    s = sd(vec)
+    d = (m - des_mean)^2 + (s - des_sd)^2
+    return(d)
+  }
+  
+  optimization = optim(c(1,1), optim_function)
+  
+  return(optimization$par)
+  
+}
 
