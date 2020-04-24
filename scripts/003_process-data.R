@@ -38,9 +38,10 @@ dat_diff =
 
 shutdown_grid = 
   shutdown_dates %>% 
-  map(~ convert_shutdown_dates_to_date_vector(.x, dat_diff)) %>% 
+  map(~ convert_shutdown_dates_to_date_vector(.x, dat_diff, 3)) %>% 
   reduce(cbind.data.frame) %>% 
-  setNames(names(shutdown_dates))
+  setNames(names(shutdown_dates)) %>% 
+  select(1:20)
 
 dat_recompiled = 
   dat_diff %>% 
@@ -56,11 +57,8 @@ shutdown_grid_capped = shutdown_grid[1:nrow(dat_recompiled), ]
 
 dat_recompiled_with_shutdowns = 
   dat_recompiled %>% 
-  # select(colnames(shutdown_grid_capped))
-  select(alabama, california, arkansas, new_jersey, kansas, michigan)
-  # select(kansas)
-  # select(arkansas)
-
+  select(colnames(shutdown_grid_capped)) 
+  
 cum_p_observed = convert_filter_to_cumsum(empirical_timing_dist, nrow(dat_recompiled_with_shutdowns))
 
 stan_data = list(
