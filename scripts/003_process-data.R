@@ -40,7 +40,8 @@ shutdown_grid =
   shutdown_dates %>% 
   map(~ convert_shutdown_dates_to_date_vector(.x, dat_diff, 7)) %>% 
   reduce(cbind.data.frame) %>% 
-  setNames(names(shutdown_dates)) 
+  setNames(names(shutdown_dates)) %>% 
+  select(3)
 
 dat_recompiled = 
   dat_diff %>% 
@@ -52,7 +53,8 @@ dat_recompiled =
 
 date_vector = dat_diff$date[1:nrow(dat_recompiled)]
 
-shutdown_grid_capped = shutdown_grid[1:nrow(dat_recompiled), ]
+shutdown_grid_capped = shutdown_grid %>% 
+  slice(1:nrow(dat_recompiled))
 
 dat_recompiled_with_shutdowns = 
   dat_recompiled %>% 
