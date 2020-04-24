@@ -1,4 +1,4 @@
-url = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv'
+url = 'https://covidtracking.com/api/v1/states/daily.csv'
 
 WINDOW = 20
 SERIAL_INTERVAL = 4

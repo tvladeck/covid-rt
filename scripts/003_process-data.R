@@ -1,6 +1,11 @@
 dat = read_csv(url)
 linelist = NCoVUtils::get_linelist()
 
+state_abbrev = 
+  read_csv("https://raw.githubusercontent.com/jasonong/List-of-US-States/master/states.csv") %>% 
+  mutate_at(vars(State), to_snake_case) %>% 
+  setNames(tolower(colnames(.)))
+
 
 
 delay = 
@@ -18,7 +23,12 @@ empirical_timing_dist =
 
 dat_diff = 
   dat %>% 
+  mutate(date = lubridate::ymd(date)) %>% 
+  rename(cases = positive) %>% 
+  rename(abbreviation = state) %>% 
+  left_join(state_abbrev, by = "abbreviation") %>% 
   select(date, state, cases) %>% 
+  filter(!is.na(state)) %>% 
   spread(state, cases) %>% 
   setNames(to_snake_case(colnames(.))) %>% 
   filter(date > lubridate::ymd("2020-03-01")) %>% 
@@ -46,7 +56,10 @@ shutdown_grid_capped = shutdown_grid[1:nrow(dat_recompiled), ]
 
 dat_recompiled_with_shutdowns = 
   dat_recompiled %>% 
-  select(colnames(shutdown_grid_capped))
+  # select(colnames(shutdown_grid_capped))
+  select(alabama, california, arkansas, new_jersey, kansas, michigan)
+  # select(kansas)
+  # select(arkansas)
 
 cum_p_observed = convert_filter_to_cumsum(empirical_timing_dist, nrow(dat_recompiled_with_shutdowns))
 
