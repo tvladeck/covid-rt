@@ -35,6 +35,21 @@ dat_diff =
   mutate_at(vars(-date), ~ c(NA, diff(.x))) %>% 
   .[-1, ]
 
+tests = 
+  dat %>% 
+  mutate(date = lubridate::ymd(date)) %>% 
+  rename(cases =  totalTestResults) %>% 
+  rename(abbreviation = state) %>% 
+  left_join(state_abbrev, by = "abbreviation") %>% 
+  select(date, state, cases) %>% 
+  filter(!is.na(state)) %>% 
+  spread(state, cases) %>% 
+  setNames(to_snake_case(colnames(.))) %>% 
+  filter(date > lubridate::ymd("2020-03-01")) %>% 
+  mutate_at(vars(-date), ~ ifelse(is.na(.x), 0, .x)) %>% 
+  mutate_at(vars(-date), ~ c(NA, diff(.x))) %>% 
+  .[-1, ]
+
 shutdown_grid = 
   shutdown_dates %>% 
   map(~ convert_shutdown_dates_to_date_vector(.x, dat_diff, 3)) %>% 
