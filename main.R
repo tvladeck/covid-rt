@@ -77,9 +77,6 @@ cbind(
 ) %>% 
   ts.plot(col = c("red", "blue"))
 
-
-
-
 implied_theta_1 = 
   post$log_smoothed_onsets %>% apply(c(2, 3), mean) %>% .[-1, 1] - 
   post$log_smoothed_onsets %>% apply(c(2, 3), mean) %>% .[-54, 1] 
@@ -87,5 +84,5 @@ implied_theta_1 =
 sampled_theta_1 = 
   post$theta %>% apply(c(2, 3), mean) %>% .[, 1]
 
-ts.plot(cbind(implied_theta_1, sampled_theta_1))
+ts.plot(cbind(implied_theta_1, sampled_theta_1), col = c("red", "blue"))
 

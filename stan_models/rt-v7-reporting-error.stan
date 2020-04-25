@@ -13,7 +13,7 @@ transformed data {
   matrix[timesteps, timesteps] cases_to_onsets = rep_matrix(0, timesteps, timesteps);
   
   for(i in 1:timesteps) {
-    cases_to_onsets[i:timesteps, i] = p_observed[1:(timesteps-(i-1))];
+    cases_to_onsets[i, i:timesteps] = p_observed[1:(timesteps-(i-1))]';
   }
 }
 
