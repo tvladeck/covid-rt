@@ -26,7 +26,7 @@ fit = sampling(
   stan_data,
   chains = 2, 
   cores = 2,
-  iter = 1000
+  iter = 2000
 )
 
 post = rstan::extract(fit)

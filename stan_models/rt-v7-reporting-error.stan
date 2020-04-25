@@ -83,21 +83,22 @@ model {
   for(s in 1:states) {
     for(t in 1:timesteps) {
       if(tests[t, s] > 0) {
-        cases[t, s] ~ neg_binomial_2(tests[t, s] .* smoothed_cases[t, s], tau[3]);
+        real mutest = fmax((tests[t, s]/1000), .1);
+        cases[t, s] ~ neg_binomial_2(mutest .* smoothed_cases[t, s], tau[3]);
       }
     }
   }
   
-  for(t in 1:(timesteps-1)) {
-    for(s in 1:states) {
-      real mu;
-      mu = log(fmax(expected_onsets_today[t, s], 0.1)); 
-      // smoothed_onsets[t+1, s] ~ poisson(mu);
-      log_smoothed_onsets[t+1, s] ~ normal(mu, tau[4]);
-      // include correction for log absolute determinant of transformation
-      target += -log(log_smoothed_onsets[t+1, s]);
-    } 
-  }
+  // for(t in 1:(timesteps-1)) {
+  //   for(s in 1:states) {
+  //     real mu;
+  //     mu = log(fmax(expected_onsets_today[t, s], 0.1)); 
+  //     // smoothed_onsets[t+1, s] ~ poisson(mu);
+  //     log_smoothed_onsets[t+1, s] ~ normal(mu, tau[4]);
+  //     // include correction for log absolute determinant of transformation
+  //     target += -log(log_smoothed_onsets[t+1, s]);
+  //   } 
+  // }
   
 }
 
