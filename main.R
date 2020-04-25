@@ -4,9 +4,11 @@ p_observed = c(empirical_timing_dist, rep(0, nrow(dat_diff)-length(empirical_tim
 
 cases_to_onsets = matrix(0, nrow = nrow(dat_diff), ncol = nrow(dat_diff))
 for(i in 1:nrow(dat_diff)) {
-  cases_to_onsets[i:nrow(dat_diff), i] = p_observed[1:(nrow(dat_diff)-(i-1))]
+  cases_to_onsets[i, i:nrow(dat_diff)]  = p_observed[1:(nrow(dat_diff)-i+1)]
 }
 
+cases_to_onsets[1:4, 1:4]
+cases_to_onsets[50:54, 50:54]
 
 modeled_state = c("massachusetts", "michigan")
 col_idx = which(colnames(dat_diff) == modeled_state)
@@ -54,6 +56,9 @@ post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 2] %>%  plot
 post$expected_onsets_today %>% apply(c(2,3), mean) %>% .[, 1] %>%  plot
 post$expected_onsets_today %>% apply(c(2,3), mean) %>% .[, 2] %>%  plot
 
+post$inferred_onsets_yesterday %>% apply(c(2,3), mean) %>% log %>% .[, 1] %>%  plot
+post$inferred_onsets_yesterday %>% apply(c(2,3), mean) %>% log %>% .[, 2] %>%  plot
+
 post$expected_onsets_today %>% apply(c(2,3), mean) %>% log %>% .[, 1] %>%  plot
 post$expected_onsets_today %>% apply(c(2,3), mean) %>% log %>% .[, 2] %>%  plot
 
@@ -82,5 +87,5 @@ implied_theta_1 =
 sampled_theta_1 = 
   post$theta %>% apply(c(2, 3), mean) %>% .[, 1]
 
-plot_par_from_posterior("theta", post, stan_data$cases, date_vector)
+ts.plot(cbind(implied_theta_1, sampled_theta_1))
 
