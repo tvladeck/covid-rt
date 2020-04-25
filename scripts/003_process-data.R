@@ -7,7 +7,6 @@ state_abbrev =
   setNames(tolower(colnames(.)))
 
 
-
 delay = 
   linelist %>% 
   select(date_onset_symptoms, date_confirmation) %>% 
@@ -38,10 +37,11 @@ dat_diff =
 
 shutdown_grid = 
   shutdown_dates %>% 
-  map(~ convert_shutdown_dates_to_date_vector(.x, dat_diff, 7)) %>% 
+  map(~ convert_shutdown_dates_to_date_vector(.x, dat_diff, 3)) %>% 
   reduce(cbind.data.frame) %>% 
   setNames(names(shutdown_dates)) %>% 
-  select(3)
+  select(1, 3:20) %>% 
+  select(-hawaii)
 
 dat_recompiled = 
   dat_diff %>% 
@@ -72,6 +72,8 @@ stan_data = list(
   shutdowns = shutdown_grid_capped,
   cum_p_observed = cum_p_observed,
   window = 20,
-  simulation_steps = 15
+  simulation_steps = 15,
+  init_theta_mean = 0.3352583,
+  init_theta_sd = 0.3032382
 )
 

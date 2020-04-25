@@ -46,7 +46,7 @@ ts.plot(
 
 
 
-stan_mod_generative = stan_model("stan_models/rt-v6-inv-mtx-approach.stan")
+stan_mod_generative = stan_model("stan_models/rt-v6-generative.stan")
 
 
 data_generative = list(
@@ -66,6 +66,48 @@ fit_generative = sampling(
 )
 
 post_generative = rstan::extract(fit_generative)
+
+ts.plot(post_generative$expected_cases %>% apply(c(2,3), mean), ylab = "expected_cases")
+ts.plot(post_generative$onsets %>% apply(c(2,3), mean), ylab = "expected_onsets")
+
+stan_mod_generative_2 = stan_model("stan_models/rt-v6-generative-v2.stan")
+
+fit_generative_2 = sampling(
+  stan_mod_generative_2,
+  data_generative,
+  chains = 2,
+  iter = 5000,
+  cores = 2
+)
+
+stan_trace(fit_generative_2, pars = c("step_size", "theta[1,1]", "initial_seed"))
+print(fit_generative_2, pars = c("step_size", "tau"))
+stan_trace(fit_generative_2, pars = c("step_size", "tau"))
+
+post_generative_2 = rstan::extract(fit_generative_2)
+
+ts.plot(post_generative_2$expected_cases %>% apply(c(2,3), median), ylab = "expected_cases")
+ts.plot(post_generative_2$onsets %>% apply(c(2,3), median), ylab = "expected_onsets")
+ts.plot(post_generative_2$theta %>% apply(c(2,3), median), ylab = "theta")
+ts.plot(post_generative_2$rt %>% apply(c(2,3), median), ylab = "rt")
+
+onsets = post_generative_2$onsets %>% apply(c(2,3), median)
+theta_ratio = log(onsets[-53]/onsets[-1])
+theta_sample =  post_generative_2$theta %>% apply(c(2,3), mean)
+
+
+log_lik_generative_2 = loo::extract_log_lik(fit_generative_2, merge_chains = F)
+reff_generative_2 = loo::relative_eff(exp(log_lik_generative_2))
+
+
+loo_generative_2 <- loo::loo(log_lik_generative_2, r_eff = reff_generative_2, cores = 2) 
+
+log_lik_generative = loo::extract_log_lik(fit_generative, merge_chains = F)
+reff_generative = loo::relative_eff(exp(log_lik_generative))
+
+
+loo_generative <- loo::loo(log_lik_generative, r_eff = reff_generative, cores = 2) 
+
 
 
 

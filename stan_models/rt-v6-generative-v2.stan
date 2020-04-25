@@ -25,36 +25,38 @@ transformed data {
 
 parameters {
   real<lower=0> serial_interval;
-  // real<lower=0> step_size;
-  // matrix[timesteps-1, states] theta_steps;
-  // row_vector<lower=0>[states] initial_seed;
-  matrix<lower=0>[timesteps, states] onsets;
+  real<lower=0> step_size;
+  matrix[timesteps-1, states] theta_steps;
+  row_vector<lower=0>[states] initial_seed;
+  vector<lower=0>[4] tau;
+  
 }
 
 transformed parameters {
-  // matrix[timesteps-1, states] theta;
+  matrix[timesteps-1, states] theta;
   real<lower=0> gam;
-  // matrix[timesteps-1, states] rt;
-  matrix<lower=0>[timesteps, states] expected_cases = onsets_to_cases * onsets;
+  matrix[timesteps-1, states] rt;
+  matrix<lower=0>[timesteps, states] onsets;
+  matrix<lower=0>[timesteps, states] expected_cases;
   
 
-  // for(s in 1:states) {
-  //   theta[, s] = cumulative_sum(theta_steps[, s]);
-  // }
+  for(s in 1:states) {
+    theta[, s] = cumulative_sum(theta_steps[, s]);
+  }
   
-  // total_onsets[1, ] = initial_seed;
-  // 
-  // for(s in 1:states) {
-  //   for(t in 2:timesteps) {
-  //     total_onsets[t, s] = total_onsets[t-1, s] * exp(theta[t-1, s]);
-  //   }
-  // }
+  onsets[1, ] = initial_seed;
+
+  for(s in 1:states) {
+    for(t in 2:timesteps) {
+      onsets[t, s] = onsets[t-1, s] * exp(theta[t-1, s]);
+    }
+  }
   
-  
+  expected_cases = onsets_to_cases * onsets;
   
   
   gam = 1/serial_interval;
-  // rt = theta/gam + 1;
+  rt = theta/gam + 1;
 }
 
 model {
@@ -64,20 +66,18 @@ model {
   // and a standard deviation of 2.9 days (95% CrI: 1.9, 4.9) [7] .
   serial_interval ~ gamma(2.626635, 0.5588585);
   
-  // step_size ~ normal(0, 0.2)T[0, ];
+  step_size ~ normal(0, tau[1])T[0, ];
+
+  initial_seed ~ gamma(tau[2], tau[3]);
   
-  // initial_seed ~ gamma(1, 1);
-  
-  // theta_steps[1, ] ~ normal(0, 1);
-  // to_vector(theta_steps[2:(timesteps-1), ]) ~ normal(0, step_size);
-  
-  for(s in 1:states) {
-    onsets[, s] ~ gamma(10, .001);
-  }
+  tau ~ gamma(.5, .5);
+
+  theta_steps[1, ] ~ normal(0, 1);
+  to_vector(theta_steps[2:(timesteps-1), ]) ~ normal(0, step_size);
   
   
   for(s in 1:states) {
-    cases[, s] ~ neg_binomial_2(expected_cases[, s], .001);
+    cases[, s] ~ neg_binomial_2(expected_cases[, s], tau[4]);
   } 
   
   
