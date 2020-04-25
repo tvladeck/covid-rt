@@ -87,17 +87,17 @@ model {
     }
   }
   
-  for(t in 1:(timesteps-1)) {
-    for(s in 1:states) {
-      real mu;
-      mu = log(fmax(expected_onsets_today[t, s], 0.1));
-      // smoothed_onsets[t+1, s] ~ poisson(mu);
-      log_smoothed_onsets[t+1, s] ~ normal(mu, tau[5]);
-      // include correction for log absolute determinant of transformation
-      // https://mc-stan.org/docs/2_21/stan-users-guide/changes-of-variables.html
-      target += -log_smoothed_onsets[t+1, s];
-    }
-  }
+  // for(t in 1:(timesteps-1)) {
+  //   for(s in 1:states) {
+  //     real mu;
+  //     mu = log(fmax(expected_onsets_today[t, s], 0.1));
+  //     // smoothed_onsets[t+1, s] ~ poisson(mu);
+  //     log_smoothed_onsets[t+1, s] ~ normal(mu, tau[5]);
+  //     // include correction for log absolute determinant of transformation
+  //     // https://mc-stan.org/docs/2_21/stan-users-guide/changes-of-variables.html
+  //     target += -log_smoothed_onsets[t+1, s];
+  //   }
+  // }
   
 }
 
