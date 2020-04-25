@@ -38,3 +38,35 @@ post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 2] %>%  plot
 post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 1] %>%  plot
 post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 2] %>%  plot
 
+post$expected_onsets_today %>% apply(c(2,3), mean) %>% .[, 1] %>%  plot
+post$expected_onsets_today %>% apply(c(2,3), mean) %>% .[, 2] %>%  plot
+
+post$expected_onsets_today %>% apply(c(2,3), mean) %>% log %>% .[, 1] %>%  plot
+post$expected_onsets_today %>% apply(c(2,3), mean) %>% log %>% .[, 2] %>%  plot
+
+post$log_smoothed_onsets %>% apply(c(2, 3), mean) %>% .[, 1] %>% plot
+post$log_smoothed_onsets %>% apply(c(2, 3), mean) %>% .[, 2] %>% plot
+
+cbind(
+  expected = post$expected_onsets_today %>% apply(c(2,3), mean) %>% log %>% .[, 1],
+  modeled = post$log_smoothed_onsets %>% apply(c(2, 3), mean) %>% .[-1, 1]
+) %>% 
+  ts.plot(col = c("red", "blue"))
+
+cbind(
+  expected = post$expected_onsets_today %>% apply(c(2,3), mean) %>% log %>% .[, 2],
+  modeled = post$log_smoothed_onsets %>% apply(c(2, 3), mean) %>% .[-1, 2]
+) %>% 
+  ts.plot(col = c("red", "blue"))
+
+
+
+implied_theta_1 = 
+  post$log_smoothed_onsets %>% apply(c(2, 3), mean) %>% .[-1, 1] - 
+  post$log_smoothed_onsets %>% apply(c(2, 3), mean) %>% .[-54, 1] 
+
+sampled_theta_1 = 
+  post$theta %>% apply(c(2, 3), mean) %>% .[, 1]
+
+plot_par_from_posterior("theta", post, stan_data$cases, date_vector)
+
