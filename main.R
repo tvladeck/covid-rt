@@ -39,13 +39,10 @@ fit = sampling(
 
 post = rstan::extract(fit)
 
-stan_trace(fit, pars = c("tau", "step_size"))
+stan_trace(fit, pars = c("tau"))
 
 post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 1] %>%  plot
 post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 2] %>%  plot
-
-
-
 
 ts.plot(cases_to_onsets %*% (post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 1]))
 post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 1] %>%  plot

@@ -19,10 +19,9 @@ transformed data {
 
 parameters {
   real<lower=0> serial_interval;
-  real<lower=0> step_size;
   matrix[timesteps-1, states] theta_steps;
   matrix[timesteps, states] lambda_steps;
-  vector<lower=0>[4] tau;
+  vector<lower=0>[5] tau;
 }
 
 
@@ -71,13 +70,11 @@ model {
   // and a standard deviation of 2.9 days (95% CrI: 1.9, 4.9) [7] .
   serial_interval ~ gamma(2.626635, 0.5588585);
   
-  step_size ~ normal(0, tau[1])T[0, ];
-  
   theta_steps[1, ] ~ normal(0, 1);
-  lambda_steps[1, ] ~ normal(0, tau[2]);
+  lambda_steps[1, ] ~ normal(0, tau[1]);
   
-  to_vector(theta_steps[2:(timesteps-1), ]) ~ normal(0, step_size);
-  to_vector(lambda_steps[2:(timesteps-1), ]) ~ normal(0, step_size);
+  to_vector(theta_steps[2:(timesteps-1), ]) ~ normal(0, tau[2]);
+  to_vector(lambda_steps[2:timesteps, ]) ~ normal(0, tau[3]);
   
   
   for(s in 1:states) {
@@ -85,7 +82,7 @@ model {
       if(tests[t, s] > 0) {
         real scaled_tests = tests[t, s] / max(tests[, s]);
         real mutest = fmax(scaled_tests, .1);
-        cases[t, s] ~ neg_binomial_2(mutest .* smoothed_cases[t, s], tau[3]);
+        cases[t, s] ~ neg_binomial_2(mutest .* smoothed_cases[t, s], tau[4]);
       }
     }
   }
@@ -95,7 +92,7 @@ model {
       real mu;
       mu = log(fmax(expected_onsets_today[t, s], 0.1));
       // smoothed_onsets[t+1, s] ~ poisson(mu);
-      log_smoothed_onsets[t+1, s] ~ normal(mu, tau[4]);
+      log_smoothed_onsets[t+1, s] ~ normal(mu, tau[5]);
       // include correction for log absolute determinant of transformation
       // https://mc-stan.org/docs/2_21/stan-users-guide/changes-of-variables.html
       target += -log_smoothed_onsets[t+1, s];
