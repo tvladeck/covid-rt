@@ -83,7 +83,8 @@ model {
   for(s in 1:states) {
     for(t in 1:timesteps) {
       if(tests[t, s] > 0) {
-        real mutest = fmax((tests[t, s]/1000), .1);
+        real scaled_tests = tests[t, s] / max(tests[, s]);
+        real mutest = fmax(scaled_tests, .1);
         cases[t, s] ~ neg_binomial_2(mutest .* smoothed_cases[t, s], tau[3]);
       }
     }
