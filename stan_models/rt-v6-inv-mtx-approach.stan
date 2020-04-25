@@ -72,7 +72,7 @@ model {
   // to_vector(theta_steps[2:(timesteps-1), ]) ~ normal(0, step_size);
   
   for(s in 1:states) {
-    onsets[, s] ~ gamma(1, .001);
+    onsets[, s] ~ gamma(10, .001);
   }
   
   

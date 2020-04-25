@@ -27,7 +27,6 @@ ml_inferred_onsets = optim(rep(0, 53), ll_inferred_onsets,
                             lower = rep(0, 53), method = "L-BFGS-B")
 
 
-
 implied_cases_from_scaled_inferred_onsets = function(.inferred_onsets) {
   
   implied_cases = onsets_to_cases %*% .inferred_onsets
@@ -50,38 +49,6 @@ ts.plot(
 stan_mod_generative = stan_model("stan_models/rt-v6-inv-mtx-approach.stan")
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-inferred_onsets = cases_to_onsets %*% dat_diff$california
-
-total_onsets = inferred_onsets / cum_p_observed
-
-
-exp_data = onsets_to_cases %*% (total_onsets * cum_p_observed)
-
-ts.plot(inferred_onsets)
-ts.plot(onsets_to_cases %*% inferred_onsets)
-
-
-
-total_onsets
-
-
-
-
-
-
 data_generative = list(
   cases = dat_diff[, 6],
   states = 1,
@@ -100,14 +67,7 @@ fit_generative = sampling(
 
 post_generative = rstan::extract(fit_generative)
 
-inferred_onsets = post_generative$total_onsets[1:2500, , 1] %>% apply(2, mean)
-scaled_onsets = inferred_onsets * cum_p_observed
-e_cases = onsets_to_cases %*% scaled_onsets
 
-cbind(
-  post_generative$expected_cases[1:2500, , 1] %>% apply(2, mean),
-  dat_diff[, 6]
-) %>% ts.plot(col = c("red", "blue"))
 
 stan_mod_base = stan_model("stan_models/rt-v3.stan")
 stan_mod_shutdown = stan_model("stan_models/rt-v4-plus-shutdown.stan")
