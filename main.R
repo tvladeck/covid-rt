@@ -1,7 +1,5 @@
 for(f in list.files("scripts", full.names = T)) source(f)
 
-
-
 p_observed = c(empirical_timing_dist, rep(0, nrow(dat_diff)-length(empirical_timing_dist)))
 
 onsets_to_cases = matrix(0, nrow = nrow(dat_diff), ncol = nrow(dat_diff))
@@ -9,12 +7,21 @@ for(i in 1:nrow(dat_diff)) {
   onsets_to_cases[i:nrow(dat_diff), i] = p_observed[1:(nrow(dat_diff)-(i-1))]
 }
 
+onsets_to_cases[1:5, 1:5]
+
 cases_to_onsets = solve(onsets_to_cases)
+
+cases_to_onsets_adj = cases_to_onsets
+cases_to_onsets_adj[which(abs(cases_to_onsets)<0.001)] = 0
+cases_to_onsets_adj[1:5, 1:5]
+
+hypothetical_two_day_series = c(1, 1)
+
+cases_to_onsets_adj[1:2, 1:2] %*% hypothetical_two_day_series
 
 observed_cases = dat_diff$california
 
 ll_inferred_onsets = function(.inferred_onsets) {
-  
   implied_cases = onsets_to_cases %*% .inferred_onsets
   
   error = sum((dat_diff$california-implied_cases)^2)
@@ -35,6 +42,12 @@ implied_cases_from_scaled_inferred_onsets = function(.inferred_onsets) {
   
 }
 
+inferred_onsets = ml_inferred_onsets$par
+
+inferred_onsets %>% ts.plot()
+
+implied_cases = implied_cases_from_scaled_inferred_onsets(ml_inferred_onsets$par) 
+
 ts.plot(
   cbind(
     implied_cases_from_scaled_inferred_onsets(ml_inferred_onsets$par),
@@ -42,6 +55,8 @@ ts.plot(
   ),
   col = c("red", "blue")
 )
+
+ts.plot(cases_to_onsets %*% implied_cases)
 
 
 
@@ -81,22 +96,24 @@ fit_generative_2 = sampling(
 )
 
 stan_trace(fit_generative_2, pars = c("step_size", "theta[1,1]", "initial_seed"))
-print(fit_generative_2, pars = c("step_size", "tau"))
-stan_trace(fit_generative_2, pars = c("step_size", "tau"))
+print(fit_generative_2, pars = c("step_size", "tau", "initial_seed"))
+stan_trace(fit_generative_2, pars = c("step_size", "tau", "initial_seed"))
 
 post_generative_2 = rstan::extract(fit_generative_2)
 
 ts.plot(post_generative_2$expected_cases %>% apply(c(2,3), median), ylab = "expected_cases")
 ts.plot(post_generative_2$onsets %>% apply(c(2,3), median), ylab = "expected_onsets")
+
+
 ts.plot(post_generative_2$theta %>% apply(c(2,3), median), ylab = "theta")
 ts.plot(post_generative_2$rt %>% apply(c(2,3), median), ylab = "rt")
 
 onsets = post_generative_2$onsets %>% apply(c(2,3), median)
 theta_ratio = log(onsets[-53]/onsets[-1])
-theta_sample =  post_generative_2$theta %>% apply(c(2,3), mean)
-
+ts.plot(theta_ratio/4 + 1)
 
 log_lik_generative_2 = loo::extract_log_lik(fit_generative_2, merge_chains = F)
+# log_lik_generative_2 = loo::extract_log_lik(fit_generative_2)
 reff_generative_2 = loo::relative_eff(exp(log_lik_generative_2))
 
 

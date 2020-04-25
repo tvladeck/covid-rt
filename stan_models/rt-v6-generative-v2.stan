@@ -28,7 +28,8 @@ parameters {
   real<lower=0> step_size;
   matrix[timesteps-1, states] theta_steps;
   row_vector<lower=0>[states] initial_seed;
-  vector<lower=0>[4] tau;
+  vector<lower=0>[5] tau;
+  matrix<lower=0>[timesteps-1, states] log_onsets_after_one;
   
 }
 
@@ -36,7 +37,9 @@ transformed parameters {
   matrix[timesteps-1, states] theta;
   real<lower=0> gam;
   matrix[timesteps-1, states] rt;
-  matrix<lower=0>[timesteps, states] onsets;
+  matrix[timesteps, states] log_onsets;
+  matrix[timesteps, states] onsets;
+  
   matrix<lower=0>[timesteps, states] expected_cases;
   
 
@@ -44,13 +47,8 @@ transformed parameters {
     theta[, s] = cumulative_sum(theta_steps[, s]);
   }
   
-  onsets[1, ] = initial_seed;
-
-  for(s in 1:states) {
-    for(t in 2:timesteps) {
-      onsets[t, s] = onsets[t-1, s] * exp(theta[t-1, s]);
-    }
-  }
+  log_onsets = append_row(initial_seed, log_onsets_after_one);
+  onsets = exp(log_onsets);
   
   expected_cases = onsets_to_cases * onsets;
   
@@ -75,6 +73,12 @@ model {
   theta_steps[1, ] ~ normal(0, 1);
   to_vector(theta_steps[2:(timesteps-1), ]) ~ normal(0, step_size);
   
+  for(s in 1:states) {
+    log_onsets_after_one[1, s] ~ normal(initial_seed[s] + theta[1, s], tau[5]);
+    for(t in 2:(timesteps-1)) {
+      log_onsets_after_one[t, s] ~ normal(log_onsets_after_one[t-1, s] + theta[1, s], tau[5]);
+    }
+  }
   
   for(s in 1:states) {
     cases[, s] ~ neg_binomial_2(expected_cases[, s], tau[4]);
