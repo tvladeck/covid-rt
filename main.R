@@ -2,6 +2,12 @@ for(f in list.files("scripts", full.names = T)) source(f)
 
 p_observed = c(empirical_timing_dist, rep(0, nrow(dat_diff)-length(empirical_timing_dist)))
 
+cases_to_onsets = matrix(0, nrow = nrow(dat_diff), ncol = nrow(dat_diff))
+for(i in 1:nrow(dat_diff)) {
+  cases_to_onsets[i:nrow(dat_diff), i] = p_observed[1:(nrow(dat_diff)-(i-1))]
+}
+
+
 modeled_state = c("massachusetts", "michigan")
 col_idx = which(colnames(dat_diff) == modeled_state)
 
@@ -35,7 +41,14 @@ stan_trace(fit, pars = c("tau", "step_size"))
 
 post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 1] %>%  plot
 post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 2] %>%  plot
+
+
+
+
+ts.plot(cases_to_onsets %*% (post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 1]))
 post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 1] %>%  plot
+
+ts.plot(cases_to_onsets %*% (post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 2]))
 post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 2] %>%  plot
 
 post$expected_onsets_today %>% apply(c(2,3), mean) %>% .[, 1] %>%  plot
@@ -58,6 +71,7 @@ cbind(
   modeled = post$log_smoothed_onsets %>% apply(c(2, 3), mean) %>% .[-1, 2]
 ) %>% 
   ts.plot(col = c("red", "blue"))
+
 
 
 
