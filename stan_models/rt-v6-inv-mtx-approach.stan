@@ -6,17 +6,25 @@
 //   - or can i just round it s.t. i get an int? 
 
 data {
-
   int timesteps; 
   int states;
   int cases[timesteps, states]; // diffed & convolved // eventually move this to xformed parameters
+  vector[timesteps] p_observed;
   vector[timesteps] cum_p_observed; // make this estimated given timing block
   real init_theta_mean;
   real init_theta_sd;
-  // real gamma_shape;
-  // real gamma_rate;
-  
 } 
+
+transformed data {
+  matrix[timesteps, timesteps] cases_to_onsets = rep_matrix(0, timesteps, timesteps);
+  matrix[timesteps, timesteps] onsets_to_cases;
+  
+  for(i in 1:timesteps) {
+    cases_to_onsets[i, i:timesteps] = p_observed[i:timesteps]';
+  }
+  
+  onsets_to_cases = inverse(cases_to_onsets);
+}
 
 parameters {
   real<lower=0> serial_interval;

@@ -37,11 +37,17 @@ transformed parameters {
   vector[states] shutdown_impact_on_rt;
   vector[states] state_shutdown_effects;
   
+  matrix[timesteps-1, states] inferred_cases_yesterday;
+  matrix[timesteps-1, states] expected_cases_today;
+
+  
   state_shutdown_effects = mean_shutdown_effect + state_shutdown_effects_std * tau;
 
   for(s in 1:states) {
     intcpt[, s] = cumulative_sum(intcpt_steps[, s]);
     theta[, s] = intcpt[, s] + state_shutdown_effects[s] * shutdowns[2:timesteps, s];
+    inferred_cases_yesterday[, s] = to_vector(cases[1:(timesteps-1), s]) ./ cum_p_observed[1:(timesteps-1)];
+    expected_cases_today[, s] = cum_p_observed[2:timesteps] .* inferred_cases_yesterday[, s] .* exp(theta[, s]);
   }
   
   gam = 1/serial_interval;
@@ -63,30 +69,29 @@ model {
   intcpt_steps[1, ] ~ normal(2, 2);
   to_vector(intcpt_steps[2:(timesteps-1), ]) ~ normal(0, step_size);
   
-  for(t in 2:timesteps) {
+  for(t in 1:(timesteps-1)) {
     for(s in 1:states) {
       real mu;
-      // we scale up yesterday's cases by the probability that we have observed it
-      real inferred_cases_yesterday = (cases[t-1, s]/cum_p_observed[t-1]);
-      // we scale down today's cases by the fact that we have not observed many of the later cases
-      real expected_cases_today = cum_p_observed[t] * inferred_cases_yesterday * exp(theta[t-1, s]);
-      // here guard against log(0) errors with init case
-      // this 0.1 can be thought of as a seeding probability
-      mu = fmax(expected_cases_today, 0.1); 
-      cases[t, s] ~ poisson(mu);
+      mu = fmax(expected_cases_today[t, s], 0.1); 
+      cases[t+1, s] ~ poisson(mu);
     } 
   }
   
 }
 
 generated quantities {
-  // matrix[timesteps-1, states] pred_cases; 
-  // 
-  // for(t in 1:(timesteps-1)) {
-  //   for(s in 1:states) {
-  //     pred_cases[t, s] = poisson_rng(cases[t, s] * exp(theta[t, s]));
-  //   } 
-  // }
+  vector[(timesteps-1)*states] log_lik;
+  matrix[timesteps-1, states] loglikm;
+  
+  for(t in 1:(timesteps-1)) {
+    for(s in 1:states) {
+      real mu;
+      mu = fmax(expected_cases_today[t, s], 0.1); 
+      loglikm[t, s] = poisson_lpmf(cases[t+1, s] | mu);
+    } 
+  }
+  
+  log_lik = to_vector(loglikm);
   
 }
 
