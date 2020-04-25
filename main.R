@@ -2,7 +2,7 @@ for(f in list.files("scripts", full.names = T)) source(f)
 
 p_observed = c(empirical_timing_dist, rep(0, nrow(dat_diff)-length(empirical_timing_dist)))
 
-modeled_state = "massachusetts"
+modeled_state = c("massachusetts", "michigan")
 col_idx = which(colnames(dat_diff) == modeled_state)
 
 stan_cases = dat_diff[, col_idx]
@@ -33,4 +33,8 @@ post = rstan::extract(fit)
 
 stan_trace(fit, pars = c("tau", "step_size"))
 
-post$smoothed_cases %>% apply(c(2,3), mean) %>% plot
+post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 1] %>%  plot
+post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 2] %>%  plot
+post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 1] %>%  plot
+post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 2] %>%  plot
+
