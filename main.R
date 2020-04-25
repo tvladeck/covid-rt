@@ -1,19 +1,170 @@
 for(f in list.files("scripts", full.names = T)) source(f)
 
-# stan_mod = stan_model("stan_models/impact-of-shutdown.stan")
-# stan_mod = stan_model("stan_models/rt.stan")
-stan_mod = stan_model("stan_models/rt-v5-gp.stan")
 
-fit = sampling(
-  stan_mod, 
+
+p_observed = c(empirical_timing_dist, rep(0, nrow(dat_diff)-length(empirical_timing_dist)))
+
+onsets_to_cases = matrix(0, nrow = nrow(dat_diff), ncol = nrow(dat_diff))
+for(i in 1:nrow(dat_diff)) {
+  onsets_to_cases[i:nrow(dat_diff), i] = p_observed[1:(nrow(dat_diff)-(i-1))]
+}
+
+cases_to_onsets = solve(onsets_to_cases)
+
+observed_cases = dat_diff$california
+
+ll_inferred_onsets = function(.inferred_onsets) {
+  
+  implied_cases = onsets_to_cases %*% .inferred_onsets
+  
+  error = sum((dat_diff$california-implied_cases)^2)
+  
+  return(error)
+}
+
+ml_inferred_onsets = optim(rep(0, 53), ll_inferred_onsets,
+                            control = list(parscale = rep(100, 53)),
+                            lower = rep(0, 53), method = "L-BFGS-B")
+
+
+
+implied_cases_from_scaled_inferred_onsets = function(.inferred_onsets) {
+  
+  implied_cases = onsets_to_cases %*% .inferred_onsets
+  
+  return(implied_cases)
+  
+}
+
+ts.plot(
+  cbind(
+    implied_cases_from_scaled_inferred_onsets(ml_inferred_onsets$par),
+    dat_diff$california
+  ),
+  col = c("red", "blue")
+)
+
+
+
+
+stan_mod_generative = stan_model("stan_models/rt-v6-inv-mtx-approach.stan")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+inferred_onsets = cases_to_onsets %*% dat_diff$california
+
+total_onsets = inferred_onsets / cum_p_observed
+
+
+exp_data = onsets_to_cases %*% (total_onsets * cum_p_observed)
+
+ts.plot(inferred_onsets)
+ts.plot(onsets_to_cases %*% inferred_onsets)
+
+
+
+total_onsets
+
+
+
+
+
+
+data_generative = list(
+  cases = dat_diff[, 6],
+  states = 1,
+  timesteps = nrow(dat_diff),
+  p_observed = p_observed,
+  cum_p_observed = cum_p_observed
+)
+
+fit_generative = sampling(
+  stan_mod_generative,
+  data_generative,
+  chains = 2,
+  iter = 5000,
+  cores = 2
+)
+
+post_generative = rstan::extract(fit_generative)
+
+inferred_onsets = post_generative$total_onsets[1:2500, , 1] %>% apply(2, mean)
+scaled_onsets = inferred_onsets * cum_p_observed
+e_cases = onsets_to_cases %*% scaled_onsets
+
+cbind(
+  post_generative$expected_cases[1:2500, , 1] %>% apply(2, mean),
+  dat_diff[, 6]
+) %>% ts.plot(col = c("red", "blue"))
+
+stan_mod_base = stan_model("stan_models/rt-v3.stan")
+stan_mod_shutdown = stan_model("stan_models/rt-v4-plus-shutdown.stan")
+
+ITER = 10e3
+WARMUP = 8e3
+
+fit_base = sampling(
+  stan_mod_base, 
   stan_data,
   chains = 2,
   cores = 2,
-  iter = 3000,
-  warmup = 2000
+  iter = ITER,
+  warmup = WARMUP
 )
 
-post = rstan::extract(fit)
+fit_shutdown = sampling(
+  stan_mod_shutdown, 
+  stan_data,
+  chains = 2,
+  cores = 2,
+  iter = ITER,
+  warmup = WARMUP
+)
+
+post_base = rstan::extract(fit_base)
+post_shutdown = rstan::extract(fit_shutdown)
+
+log_lik_base = loo::extract_log_lik(fit_base, merge_chains = F)
+log_lik_shutdown = loo::extract_log_lik(fit_shutdown, merge_chains = F)
+reff_base = loo::relative_eff(exp(log_lik_base))
+reff_shutdown = loo::relative_eff(exp(log_lik_shutdown))
+
+# reff_base[which(is.na(reff_base))] = mean(reff_base, na.rm = T)
+# reff_shutdown[which(is.na(reff_shutdown))] = mean(reff_shutdown, na.rm = T)
+
+
+loo_base <- loo(log_lik_base, r_eff = reff_base, cores = 2)
+loo_shutdown <- loo(log_lik_shutdown, r_eff = reff_shutdown, cores = 2)
+
+loo_base
+loo_shutdown
+
+loo::pareto_k_ids(loo_base, threshold = 0.5)
+
+a = loo::loo_compare(loo_base, loo_shutdown)
+
+wts <- loo::loo_model_weights(list(loo_base, loo_shutdown), method = "stacking")
+
+print(a)
+
+stan_trace(fit_shutdown, "shutdown_impact_on_rt")
+print(fit_shutdown, "shutdown_impact_on_rt")
+
+plot_rt_from_posterior(post_shutdown, stan_data$cases, date_vector)
+
+
 
 print(fit, "step_size")
 print(fit, "shutdown_impact_on_rt")
