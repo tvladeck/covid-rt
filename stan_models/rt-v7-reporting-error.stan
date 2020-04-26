@@ -8,7 +8,6 @@ data {
   vector[timesteps] cum_p_observed; // make this estimated given timing block
 
 } 
-
 transformed data {
   matrix[timesteps, timesteps] cases_to_onsets = rep_matrix(0, timesteps, timesteps);
   
@@ -16,16 +15,12 @@ transformed data {
     cases_to_onsets[i, i:timesteps] = p_observed[1:(timesteps-(i-1))]';
   }
 }
-
 parameters {
   real<lower=0> serial_interval;
   matrix[timesteps, states] lambda_steps;
   vector<lower=0>[3] tau;
-  real<lower=0> step_size;
+  // real<lower=0> step_size;
 }
-
-
-
 transformed parameters {
   matrix[timesteps-1, states] theta;
   matrix[timesteps, states] lambda;
@@ -33,7 +28,6 @@ transformed parameters {
   matrix[timesteps-1, states] rt;
   matrix[timesteps, states]   smoothed_cases;
   matrix[timesteps, states]   smoothed_onsets;
-  matrix[timesteps, states]   upscaled_smoothed_onsets;
   matrix[timesteps-1, states] theta_steps;
 
   for(s in 1:states) {
@@ -44,11 +38,12 @@ transformed parameters {
   
   for(s in 1:states) {
     smoothed_onsets[, s] = cases_to_onsets * smoothed_cases[, s];
-  }
-  
-  for(s in 1:states) {
-    upscaled_smoothed_onsets[, s] = smoothed_onsets[, s]./cum_p_observed;
-    theta[, s] = log(upscaled_smoothed_onsets[2:timesteps, s] ./ upscaled_smoothed_onsets[1:(timesteps-1), s]);
+    
+    theta[, s] = log(
+      (cum_p_observed[1:(timesteps-1)] ./ cum_p_observed[2:timesteps]) .* 
+      (smoothed_cases[2:timesteps, s] ./ smoothed_cases[1:(timesteps-1), s])
+    );
+    
     theta_steps[2:(timesteps-1), s] = theta[2:(timesteps-1), s] - theta[1:(timesteps-2), s];
     theta_steps[1, s] = theta[1, s];
   }
@@ -68,14 +63,13 @@ model {
   // and a standard deviation of 2.9 days (95% CrI: 1.9, 4.9) [7] .
   serial_interval ~ gamma(2.626635, 0.5588585);
   
-  theta_steps[1, ] ~ normal(0, 1);
+  // theta_steps[1, ] ~ normal(0, 1);
   lambda_steps[1, ] ~ normal(0, tau[1]);
   
-  step_size ~ normal(0, .1);
+  // step_size ~ normal(0, .1);
   
-  to_vector(theta_steps[2:(timesteps-1), ]) ~ normal(0, step_size);
+  // to_vector(theta_steps[2:(timesteps-1), ]) ~ normal(0, step_size);
   to_vector(lambda_steps[2:timesteps, ]) ~ normal(0, tau[2]);
-  
   
   for(s in 1:states) {
     for(t in 1:timesteps) {
