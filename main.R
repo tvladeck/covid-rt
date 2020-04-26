@@ -17,7 +17,8 @@ obs_cases = dat_diff$michigan
 obs_cases %>% ts.plot()
 
 ll_onsets = function(.onsets, tau) {
-  cases = onset_to_cases %*% .onsets
+  .obs_onsets = .onsets * cum_p_observed
+  cases = onset_to_cases %*% .obs_onsets
   ll = sum(dnbinom(obs_cases, mu = cases, size = tau, log = T))
   return(ll)
 }
@@ -32,7 +33,7 @@ found_onsets =
   optim(rep(1, 55), find_onsets, method = "L-BFGS-B", lower = rep(0.1, 55),
       control = list(fnscale = -1, parscale = rep(10, 55)))
 
-found_cases = onset_to_cases %*% found_onsets$par[1:54]
+found_cases = (onset_to_cases %*% (found_onsets$par[1:54] * cum_p_observed)) 
 ts.plot(cbind(found_cases, obs_cases, found_onsets$par[1:54]), col = c("red", "blue", "green"))
 
 modeled_state = c("massachusetts", "michigan")
