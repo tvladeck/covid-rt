@@ -7,6 +7,8 @@ for(i in 1:nrow(dat_diff)) {
   cases_to_onsets[i, i:nrow(dat_diff)]  = p_observed[1:(nrow(dat_diff)-i+1)]
 }
 
+
+
 date_vector = dat_diff$date
 
 cases_to_onsets[1:4, 1:4]
@@ -67,16 +69,15 @@ post$lambda_steps %>% apply(c(2,3), mean) %>% .[, 3] %>%  ts.plot()
 
 stan_data$cases[, 1] %>% ts.plot()
 stan_data$tests[, 1] %>% ts.plot()
-post$inferred_onsets %>% apply(c(2,3), mean) %>% .[, 1] %>%  ts.plot()
-post$scaled_inferred_onsets %>% apply(c(2,3), mean) %>% .[, 1] %>%  ts.plot()
 
 stan_data$cases[, 2] %>% ts.plot()
-post$inferred_onsets %>% apply(c(2,3), mean) %>% .[, 2] %>%  ts.plot()
-post$scaled_inferred_onsets %>% apply(c(2,3), mean) %>% .[, 2] %>%  ts.plot()
+stan_data$tests[, 2] %>% ts.plot()
 
 stan_data$cases[, 3] %>% ts.plot()
 stan_data$tests[, 3] %>% ts.plot()
-post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 3] %>%  ts.plot()
+
+plot_par_from_posterior("scaled_inferred_onsets", post, stan_data$cases,date_vector, 1)
+plot_par_from_posterior("inferred_theta", post, stan_data$cases,date_vector, 1)
 
 log(post$inferred_theta) %>% apply(c(2,3), mean) %>% .[, 1] %>%  ts.plot()
 

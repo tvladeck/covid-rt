@@ -33,8 +33,8 @@ transformed parameters {
   
   for(s in 1:states) {
     lambda_steps[1, s] = initial_onsetload[s];
-    lambda_steps[2:timesteps, s] = exp(onset_to_cases[2:timesteps, 2:timesteps] * theta_steps[, s]);
-    lambda[, s] = cumulative_sum(lambda_steps[, s]);
+    lambda_steps[2:timesteps, s] = onset_to_cases[2:timesteps, 2:timesteps] * theta_steps[, s];
+    lambda[, s] = exp(cumulative_sum(lambda_steps[, s]));
     inferred_onsets[, s] = cases_to_onsets * lambda[, s];
     scaled_inferred_onsets[, s] = inferred_onsets[, s] ./ cum_p_observed;
     inferred_theta[, s] = log(scaled_inferred_onsets[2:timesteps, s] ./ scaled_inferred_onsets[1:(timesteps-1), s]);
