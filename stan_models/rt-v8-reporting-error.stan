@@ -11,10 +11,10 @@ transformed data {
   matrix[timesteps, timesteps] onset_to_cases = rep_matrix(0, timesteps, timesteps);
   
   for(i in 1:timesteps) {
-    cases_to_onsets[i, i:timesteps] = p_observed[1:(timesteps-(i-1))]';
+    onset_to_cases[i, i:timesteps] = p_observed[1:(timesteps-(i-1))]';
   }
   
-  onset_to_cases = inverse(cases_to_onsets);
+  cases_to_onsets = inverse(onset_to_cases);
 }
 parameters {
   matrix[timesteps-1, states] theta_steps;
