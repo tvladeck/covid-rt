@@ -32,6 +32,7 @@ transformed parameters {
     lambda_steps[1, s] = initial_onsetload[s];
     lambda_steps[2:timesteps, s] = exp(onset_to_cases[2:timesteps, 2:timesteps] * theta_steps[, s]);
     lambda[, s] = cumulative_sum(lambda_steps[, s]);
+    inferred_onsets[, s] = cases_to_onsets * lambda[, s];
   }
   
   gam = 1/serial_interval;

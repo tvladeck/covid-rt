@@ -56,18 +56,19 @@ fit = sampling(
 post = rstan::extract(fit)
 
 stan_trace(fit, pars = c("tau"))
+stan_trace(fit, pars = c("theta_steps[2,3]"))
 
 post$lambda %>% apply(c(2,3), mean) %>% .[, 1] %>%  ts.plot()
 post$lambda %>% apply(c(2,3), mean) %>% .[, 2] %>%  ts.plot()
 post$lambda %>% apply(c(2,3), mean) %>% .[, 3] %>%  ts.plot()
-post$theta_steps %>% apply(c(2,3), mean) %>% .[, 3] %>%  ts.plot()
+post$lambda_steps %>% apply(c(2,3), mean) %>% .[, 3] %>%  ts.plot()
 
 stan_data$cases[, 1] %>% ts.plot()
 stan_data$tests[, 1] %>% ts.plot()
-post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 1] %>%  ts.plot()
+post$inferred_onsets %>% apply(c(2,3), mean) %>% .[, 1] %>%  ts.plot()
 
 stan_data$cases[, 2] %>% ts.plot()
-post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 2] %>%  ts.plot()
+post$inferred_onsets %>% apply(c(2,3), mean) %>% .[, 2] %>%  ts.plot()
 
 stan_data$cases[, 3] %>% ts.plot()
 stan_data$tests[, 3] %>% ts.plot()
