@@ -20,7 +20,7 @@ transformed data {
 parameters {
   real<lower=0> serial_interval;
   matrix[timesteps, states] lambda_steps;
-  vector<lower=0>[5] tau;
+  vector<lower=0>[3] tau;
 }
 
 
@@ -32,9 +32,7 @@ transformed parameters {
   matrix[timesteps-1, states] rt;
   matrix[timesteps, states]   smoothed_cases;
   matrix[timesteps, states]   smoothed_onsets;
-  matrix[timesteps, states]   log_smoothed_onsets;
-  matrix[timesteps, states]   upscaled_log_smoothed_onsets;
-  matrix[timesteps-1, states] expected_log_smoothed_onsets;
+  matrix[timesteps, states]   upscaled_smoothed_onsets;
   matrix[timesteps-1, states] theta_steps;
 
   for(s in 1:states) {
@@ -47,12 +45,10 @@ transformed parameters {
     smoothed_onsets[, s] = cases_to_onsets * smoothed_cases[, s];
   }
   
-  log_smoothed_onsets = log(smoothed_onsets);
-  
   for(s in 1:states) {
-    upscaled_log_smoothed_onsets[, s] = log_smoothed_onsets[, s] - log(cum_p_observed);
-    theta[, s] = upscaled_log_smoothed_onsets[2:timesteps, s] - upscaled_log_smoothed_onsets[1:(timesteps-1), s];
-    theta_steps[2:(timesteps-1), s] = theta[2:timesteps-1, s] - theta[1:(timesteps-2), s];
+    upscaled_smoothed_onsets[, s] = smoothed_onsets[, s]./cum_p_observed;
+    theta[, s] = upscaled_smoothed_onsets[2:timesteps, s] ./ upscaled_smoothed_onsets[1:(timesteps-1), s];
+    theta_steps[2:(timesteps-1), s] = theta[2:(timesteps-1), s] - theta[1:(timesteps-2), s];
     theta_steps[1, s] = theta[1, s];
   }
 
@@ -74,8 +70,8 @@ model {
   theta_steps[1, ] ~ normal(0, 1);
   lambda_steps[1, ] ~ normal(0, tau[1]);
   
-  to_vector(theta_steps[2:(timesteps-1), ]) ~ normal(0, tau[2]);
-  to_vector(lambda_steps[2:timesteps, ]) ~ normal(0, tau[3]);
+  // to_vector(theta_steps[2:(timesteps-1), ]) ~ normal(0, tau[4]);
+  to_vector(lambda_steps[2:timesteps, ]) ~ normal(0, tau[2]);
   
   
   for(s in 1:states) {
@@ -83,7 +79,7 @@ model {
       if(tests[t, s] > 0) {
         real scaled_tests = tests[t, s] / max(tests[, s]);
         real mutest = fmax(scaled_tests, .1);
-        cases[t, s] ~ neg_binomial_2(mutest .* smoothed_cases[t, s], tau[4]);
+        cases[t, s] ~ neg_binomial_2(mutest .* smoothed_cases[t, s], tau[3]);
       }
     }
   }
