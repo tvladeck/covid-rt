@@ -13,6 +13,8 @@ cases_to_onsets[50:54, 50:54]
 modeled_state = c("massachusetts", "michigan")
 col_idx = which(colnames(dat_diff) == modeled_state)
 
+col_idx = c(23, 24, 34)
+
 stan_cases = dat_diff[, col_idx]
 stan_tests = tests[, col_idx]
 stan_timesteps = nrow(stan_tests)
@@ -39,11 +41,47 @@ fit = sampling(
 
 post = rstan::extract(fit)
 
-stan_trace(fit, pars = c("tau", "step_size"))
+stan_trace(fit, pars = c("tau"))
 
-post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 1] %>%  plot
-post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 2] %>%  plot
-post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 2] %>%  plot
+post$lambda %>% apply(c(2,3), mean) %>% .[, 1] %>%  ts.plot()
+
+post$lambda %>% apply(c(2,3), mean) %>% .[, 2] %>%  ts.plot()
+post$lambda %>% apply(c(2,3), mean) %>% .[, 3] %>%  ts.plot()
+
+
+
+stan_data$cases[, 1] %>% ts.plot()
+stan_data$tests[, 1] %>% ts.plot()
+post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 1] %>%  ts.plot()
+
+stan_data$cases[, 2] %>% ts.plot()
+post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 2] %>%  ts.plot()
+
+stan_data$cases[, 3] %>% ts.plot()
+stan_data$tests[, 3] %>% ts.plot()
+post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 3] %>%  ts.plot()
+
+post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 1] %>%  ts.plot()
+post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 2] %>%  ts.plot()
+post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 3] %>%  ts.plot()
+
+impl_theta_1 = 
+  log(
+    (post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[-1, 1] / cum_p_observed[-1]) / 
+    (post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[-54, 1] / cum_p_observed[-54])
+  )
+
+ts.plot(impl_theta_1 * 4 + 1)
+
+
+impl_theta_2 = 
+  log(
+    (post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[-1, 2] / cum_p_observed[-1]) / 
+      (post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[-54, 2] / cum_p_observed[-54])
+  )
+
+ts.plot(impl_theta_2 * 4 + 1)
+
 
 post$theta %>% apply(c(2,3), mean) %>% .[, 1] %>% ts.plot()
 post$rt %>% apply(c(2,3), mean) %>% .[, 1] %>% plot
