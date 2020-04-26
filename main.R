@@ -13,28 +13,27 @@ cases_to_onsets = solve(onset_to_cases)
 onset_to_cases[1:4, 1:4]
 cases_to_onsets[1:4, 1:4]
 
-date_vector = dat_diff$date
+obs_cases = dat_diff$michigan
+obs_cases %>% ts.plot()
 
-cases_to_onsets[1:4, 1:4]
-cases_to_onsets[50:54, 50:54]
+ll_onsets = function(.onsets, tau) {
+  cases = onset_to_cases %*% .onsets
+  ll = sum(dnbinom(obs_cases, mu = cases, size = tau, log = T))
+  return(ll)
+}
 
-onsets_to_cases = solve(cases_to_onsets)
+find_onsets = function(par) {
+  .onsets = par[1:length(obs_cases)]
+  tau = par[1+length(obs_cases)]
+  ll_onsets(.onsets, tau)
+}
 
-t(onsets_to_cases)[1:4, 1:4]
-onsets_to_cases[51:54, 51:54]
+found_onsets = 
+  optim(rep(1, 55), find_onsets, method = "L-BFGS-B", lower = rep(0.1, 55),
+      control = list(fnscale = -1, parscale = rep(10, 55)))
 
-TS = 6
-mini_onsets_to_cases = onsets_to_cases[1:TS, 1:TS]
-onsets = c(1, 1, rep(0, TS-2))
-mini_onsets_to_cases %*% onsets
-
-onsets_to_cases %*% onsets
-
-onsets = rnorm(54, 0, .1)
-onsets_to_cases %*% onsets
-
-impl_cases_1 = onsets_to_cases %*% (post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 1])
-
+found_cases = onset_to_cases %*% found_onsets$par[1:54]
+ts.plot(cbind(found_cases, obs_cases, found_onsets$par[1:54]), col = c("red", "blue", "green"))
 
 modeled_state = c("massachusetts", "michigan")
 col_idx = which(colnames(dat_diff) == modeled_state)
@@ -45,6 +44,7 @@ stan_cases = dat_diff[, col_idx]
 stan_tests = tests[, col_idx]
 stan_timesteps = nrow(stan_tests)
 stan_states = ncol(stan_tests)
+date_vector = dat_diff$date
 
 stan_data = list(
   timesteps = stan_timesteps,
