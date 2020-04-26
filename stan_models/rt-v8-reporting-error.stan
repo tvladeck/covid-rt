@@ -24,7 +24,7 @@ parameters {
 }
 transformed parameters {
   matrix[timesteps, states] onsets;
-  matrix[timesteps, states] observed_onsets;
+  // matrix[timesteps, states] observed_onsets;
   matrix[timesteps, states] inferred_onsets;
   matrix[timesteps, states] scaled_inferred_onsets;
   matrix[timesteps-1, states] theta;
@@ -39,8 +39,8 @@ transformed parameters {
     theta[, s] = cumulative_sum(theta_steps[, s]);
     log_delta_onset[2:timesteps] = theta[, s];
     onsets[, s] = exp(cumulative_sum(log_delta_onset));
-    observed_onsets[, s] = onsets[, s] .* cum_p_observed;
-    lambda[, s] = onset_to_cases * observed_onsets[, s];
+    // observed_onsets[, s] = onsets[, s] .* cum_p_observed;
+    lambda[, s] = onset_to_cases * onsets[, s];
     inferred_onsets[, s] = cases_to_onsets * lambda[, s];
     scaled_inferred_onsets[, s] = inferred_onsets[, s] ./ cum_p_observed;
     inferred_theta[, s] = log(scaled_inferred_onsets[2:timesteps, s] ./ scaled_inferred_onsets[1:(timesteps-1), s]);

@@ -61,9 +61,9 @@ mod = stan_model("stan_models/rt-v8-reporting-error.stan")
 fit = sampling(
   mod, 
   stan_data,
-  chains = 2, 
-  cores = 2,
-  iter = 2000
+  chains = 1, 
+  cores = 1,
+  iter = 10
 )
 
 post = rstan::extract(fit)
