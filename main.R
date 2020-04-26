@@ -43,55 +43,12 @@ stan_trace(fit, pars = c("tau"))
 
 post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 1] %>%  plot
 post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 2] %>%  plot
-
-ts.plot(cases_to_onsets %*% (post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 1]))
-post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 1] %>%  plot
-
-ts.plot(cases_to_onsets %*% (post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 2]))
 post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 2] %>%  plot
+post$log_smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 2] %>%  plot
 
-post$expected_onsets_today %>% apply(c(2,3), mean) %>% .[, 1] %>%  plot
-post$expected_onsets_today %>% apply(c(2,3), mean) %>% .[, 2] %>%  plot
 
-post$inferred_onsets_yesterday %>% apply(c(2,3), mean) %>% log %>% .[, 1] %>%  plot
-post$inferred_onsets_yesterday %>% apply(c(2,3), mean) %>% log %>% .[, 2] %>%  plot
-
-post$expected_onsets_today %>% apply(c(2,3), mean) %>% log %>% .[, 1] %>%  plot
-post$expected_onsets_today %>% apply(c(2,3), mean) %>% log %>% .[, 2] %>%  plot
-
-post$log_smoothed_onsets %>% apply(c(2, 3), mean) %>% .[, 1] %>% plot
-post$log_smoothed_onsets %>% apply(c(2, 3), mean) %>% .[, 2] %>% plot
-
-cbind(
-  expected = post$expected_onsets_today %>% apply(c(2,3), mean) %>% log %>% .[, 1],
-  modeled = post$log_smoothed_onsets %>% apply(c(2, 3), mean) %>% .[-1, 1]
-) %>% 
-  ts.plot(col = c("red", "blue"))
-
-cbind(
-  expected = post$expected_onsets_today %>% apply(c(2,3), mean) %>% log %>% .[, 2],
-  modeled = post$log_smoothed_onsets %>% apply(c(2, 3), mean) %>% .[-1, 2]
-) %>% 
-  ts.plot(col = c("red", "blue"))
-
-implied_theta_1 = 
-  (post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[-1, 1] %>% {./cum_p_observed[-1]} /
-  post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[-54, 1] %>% {./cum_p_observed[-54]}) %>% 
-  log
-
-implied_rt_1 = implied_theta_1 * 4 + 1
-
-implied_theta_2 = 
-  (post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[-1, 2] %>% {./cum_p_observed[-1]} /
-     post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[-54, 2] %>% {./cum_p_observed[-54]}) %>% 
-  log
-
-implied_rt_2 = implied_theta_2 * 4 + 1
-
-plot(implied_rt_2, type = "l")
-
-sampled_theta_1 = 
-  post$theta %>% apply(c(2, 3), mean) %>% .[, 1]
-
-ts.plot(cbind(implied_theta_1, sampled_theta_1), col = c("red", "blue"))
+post$theta %>% apply(c(2,3), mean) %>% .[, 1] %>% plot
+post$theta %>% apply(c(2,3), mean) %>% .[, 1] %>% diff %>% plot
+post$rt %>% apply(c(2,3), mean) %>% .[, 1] %>% plot
+post$rt %>% apply(c(2,3), mean) %>% .[, 2] %>% plot
 

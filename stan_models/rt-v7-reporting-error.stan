@@ -19,7 +19,6 @@ transformed data {
 
 parameters {
   real<lower=0> serial_interval;
-  matrix[timesteps-1, states] theta_steps;
   matrix[timesteps, states] lambda_steps;
   vector<lower=0>[5] tau;
 }
@@ -34,11 +33,11 @@ transformed parameters {
   matrix[timesteps, states]   smoothed_cases;
   matrix[timesteps, states]   smoothed_onsets;
   matrix[timesteps, states]   log_smoothed_onsets;
-  matrix[timesteps-1, states] inferred_onsets_yesterday;
-  matrix[timesteps-1, states] expected_onsets_today;
+  matrix[timesteps, states]   upscaled_log_smoothed_onsets;
+  matrix[timesteps-1, states] expected_log_smoothed_onsets;
+  matrix[timesteps-1, states] theta_steps;
 
   for(s in 1:states) {
-    theta[, s] = cumulative_sum(theta_steps[, s]);
     lambda[, s] = cumulative_sum(lambda_steps[, s]);
   }
   
@@ -51,10 +50,12 @@ transformed parameters {
   log_smoothed_onsets = log(smoothed_onsets);
   
   for(s in 1:states) {
-    inferred_onsets_yesterday[, s] = to_vector(smoothed_onsets[1:(timesteps-1), s]) ./ cum_p_observed[1:(timesteps-1)];
-    expected_onsets_today[, s] = cum_p_observed[2:timesteps] .* inferred_onsets_yesterday[, s] .* exp(theta[, s]);
+    upscaled_log_smoothed_onsets[, s] = log_smoothed_onsets[, s] - log(cum_p_observed);
+    theta[, s] = upscaled_log_smoothed_onsets[2:timesteps, s] - upscaled_log_smoothed_onsets[1:(timesteps-1), s];
+    theta_steps[2:(timesteps-1), s] = theta[2:timesteps-1, s] - theta[1:(timesteps-2), s];
+    theta_steps[1, s] = theta[1, s];
   }
-  
+
   gam = 1/serial_interval;
   rt = theta/gam + 1;
 
@@ -86,18 +87,7 @@ model {
       }
     }
   }
-  
-  // for(t in 1:(timesteps-1)) {
-  //   for(s in 1:states) {
-  //     real mu;
-  //     mu = log(fmax(expected_onsets_today[t, s], 0.1));
-  //     // smoothed_onsets[t+1, s] ~ poisson(mu);
-  //     log_smoothed_onsets[t+1, s] ~ normal(mu, tau[5]);
-  //     // include correction for log absolute determinant of transformation
-  //     // https://mc-stan.org/docs/2_21/stan-users-guide/changes-of-variables.html
-  //     target += -log_smoothed_onsets[t+1, s];
-  //   }
-  // }
+
   
 }
 
