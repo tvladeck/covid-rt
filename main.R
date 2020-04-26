@@ -48,7 +48,8 @@ post$log_smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 2] %>%  plot
 
 
 post$theta %>% apply(c(2,3), mean) %>% .[, 1] %>% plot
-post$theta %>% apply(c(2,3), mean) %>% .[, 1] %>% log %>% diff %>% plot
 post$rt %>% apply(c(2,3), mean) %>% .[, 1] %>% plot
 post$rt %>% apply(c(2,3), mean) %>% .[, 2] %>% plot
 
+summarize_rt_from_posterior %>% args
+plot_rt_from_posterior(post, stan_cases, date_vector)
