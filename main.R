@@ -67,9 +67,9 @@ initfn = function(x) {
 fit = sampling(
   mod, 
   stan_data,
-  chains = 1, 
-  cores = 1,
-  iter = 10,
+  chains = 2, 
+  cores = 2,
+  iter = 1000,
   init = initfn
 )
 
@@ -93,7 +93,9 @@ stan_data$cases[, 3] %>% ts.plot()
 stan_data$tests[, 3] %>% ts.plot()
 
 plot_par_from_posterior("scaled_inferred_onsets", post, stan_data$cases,date_vector, 1)
-plot_par_from_posterior("inferred_theta", post, stan_data$cases,date_vector, 1)
+plot_par_from_posterior("inferred_onsets", post, stan_data$cases,date_vector, 1)
+plot_par_from_posterior("rt", post, stan_data$cases,date_vector, 1)
+plot_par_from_posterior("lambda", post, stan_data$cases,date_vector, 1)
 
 log(post$inferred_theta) %>% apply(c(2,3), mean) %>% .[, 1] %>%  ts.plot()
 
