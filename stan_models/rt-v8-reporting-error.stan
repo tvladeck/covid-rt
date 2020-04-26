@@ -23,18 +23,22 @@ parameters {
   vector<lower=0>[2] tau;
 }
 transformed parameters {
-  matrix[timesteps, states] lambda_steps;
+  matrix[timesteps, states] onsets;
   matrix[timesteps, states] inferred_onsets;
   matrix[timesteps, states] scaled_inferred_onsets;
+  matrix[timesteps-1, states] theta;
   matrix[timesteps-1, states] inferred_theta;
   matrix[timesteps-1, states] rt;
   matrix[timesteps, states] lambda;
   real<lower=0> gam;
   
   for(s in 1:states) {
-    lambda_steps[1, s] = initial_onsetload[s];
-    lambda_steps[2:timesteps, s] = onset_to_cases[2:timesteps, 2:timesteps] * theta_steps[, s];
-    lambda[, s] = exp(cumulative_sum(lambda_steps[, s]));
+    vector[timesteps] log_delta_onset; 
+    log_delta_onset[1] = initial_onsetload[s];
+    theta[, s] = cumulative_sum(theta_steps[, s]);
+    log_delta_onset[2:timesteps] = theta[, s];
+    onsets[, s] = exp(cumulative_sum(log_delta_onset));
+    lambda[, s] = onset_to_cases * onsets[, s];
     inferred_onsets[, s] = cases_to_onsets * lambda[, s];
     scaled_inferred_onsets[, s] = inferred_onsets[, s] ./ cum_p_observed;
     inferred_theta[, s] = log(scaled_inferred_onsets[2:timesteps, s] ./ scaled_inferred_onsets[1:(timesteps-1), s]);

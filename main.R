@@ -16,10 +16,14 @@ cases_to_onsets[50:54, 50:54]
 
 onsets_to_cases = solve(cases_to_onsets)
 
-onsets_to_cases[1:4, 1:4]
+t(onsets_to_cases)[1:4, 1:4]
 onsets_to_cases[51:54, 51:54]
 
-onsets = 1:54
+TS = 6
+mini_onsets_to_cases = onsets_to_cases[1:TS, 1:TS]
+onsets = c(1, 1, rep(0, TS-2))
+mini_onsets_to_cases %*% onsets
+
 onsets_to_cases %*% onsets
 
 onsets = rnorm(54, 0, .1)
@@ -60,7 +64,7 @@ fit = sampling(
 post = rstan::extract(fit)
 
 stan_trace(fit, pars = c("tau"))
-stan_trace(fit, pars = c("theta_steps[2,3]"))
+stan_trace(fit, pars = c("theta_steps[2,3]", "initial_onsetload"))
 
 post$lambda %>% apply(c(2,3), mean) %>% .[, 1] %>%  ts.plot()
 post$lambda %>% apply(c(2,3), mean) %>% .[, 2] %>%  ts.plot()
