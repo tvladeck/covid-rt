@@ -2,12 +2,16 @@ for(f in list.files("scripts", full.names = T)) source(f)
 
 p_observed = c(empirical_timing_dist, rep(0, nrow(dat_diff)-length(empirical_timing_dist)))
 
-cases_to_onsets = matrix(0, nrow = nrow(dat_diff), ncol = nrow(dat_diff))
+timesteps = nrow(dat_diff)
+onset_to_cases = matrix(0, nrow = timesteps, ncol = timesteps)
 for(i in 1:nrow(dat_diff)) {
-  cases_to_onsets[i, i:nrow(dat_diff)]  = p_observed[1:(nrow(dat_diff)-i+1)]
+  onset_to_cases[i:timesteps, i]  = p_observed[1:(timesteps-i+1)]
 }
 
+cases_to_onsets = solve(onset_to_cases)
 
+onset_to_cases[1:4, 1:4]
+cases_to_onsets[1:4, 1:4]
 
 date_vector = dat_diff$date
 
