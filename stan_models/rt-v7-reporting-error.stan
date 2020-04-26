@@ -21,6 +21,7 @@ parameters {
   real<lower=0> serial_interval;
   matrix[timesteps, states] lambda_steps;
   vector<lower=0>[3] tau;
+  real<lower=0> step_size;
 }
 
 
@@ -70,7 +71,9 @@ model {
   theta_steps[1, ] ~ normal(0, 1);
   lambda_steps[1, ] ~ normal(0, tau[1]);
   
-  to_vector(theta_steps[2:(timesteps-1), ]) ~ normal(0, .2);
+  step_size ~ normal(0, .1);
+  
+  to_vector(theta_steps[2:(timesteps-1), ]) ~ normal(0, step_size);
   to_vector(lambda_steps[2:timesteps, ]) ~ normal(0, tau[2]);
   
   
