@@ -12,7 +12,14 @@ cases_to_onsets[50:54, 50:54]
 
 onsets_to_cases = solve(cases_to_onsets)
 
+onsets_to_cases[1:4, 1:4]
+onsets_to_cases[51:54, 51:54]
 
+onsets = 1:54
+onsets_to_cases %*% onsets
+
+onsets = rnorm(54, 0, .1)
+onsets_to_cases %*% onsets
 
 impl_cases_1 = onsets_to_cases %*% (post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 1])
 
@@ -53,6 +60,7 @@ stan_trace(fit, pars = c("tau"))
 post$lambda %>% apply(c(2,3), mean) %>% .[, 1] %>%  ts.plot()
 post$lambda %>% apply(c(2,3), mean) %>% .[, 2] %>%  ts.plot()
 post$lambda %>% apply(c(2,3), mean) %>% .[, 3] %>%  ts.plot()
+post$theta_steps %>% apply(c(2,3), mean) %>% .[, 3] %>%  ts.plot()
 
 stan_data$cases[, 1] %>% ts.plot()
 stan_data$tests[, 1] %>% ts.plot()

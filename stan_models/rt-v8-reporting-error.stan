@@ -23,22 +23,15 @@ parameters {
   vector<lower=0>[2] tau;
 }
 transformed parameters {
-  matrix[timesteps-1, states] theta;
+  matrix[timesteps, states] lambda_steps;
   matrix[timesteps, states] inferred_onsets;
   matrix[timesteps, states] lambda;
   real<lower=0> gam;
   
   for(s in 1:states) {
-    theta[, s] = cumulative_sum(theta_steps[, s]);
-    inferred_onsets[1, s] = initial_onsetload[s];
-    for(t in 1:(timesteps-1)) {
-      inferred_onsets[t+1, s] = inferred_onsets[t, s] * exp(theta[t, s]);
-    }
-    lambda[, s] = onset_to_cases * inferred_onsets[, s];
-    
-    for(t in 1:timesteps) {
-      lambda[t, s] = fmax(lambda[t, s], 0.01);
-    }
+    lambda_steps[1, s] = initial_onsetload[s];
+    lambda_steps[2:timesteps, s] = exp(onset_to_cases[2:timesteps, 2:timesteps] * theta_steps[, s]);
+    lambda[, s] = cumulative_sum(lambda_steps[, s]);
   }
   
   gam = 1/serial_interval;
@@ -50,9 +43,7 @@ model {
   
   initial_onsetload ~ gamma(1, .1);
   
-  theta_steps[1, ] ~ normal(0, 1);
-  
-  to_vector(theta_steps[2:(timesteps-1), ]) ~ normal(0, tau[1]);
+  to_vector(theta_steps[1:(timesteps-1), ]) ~ normal(0, tau[1]);
   
   // https://epiforecasts.io/covid/
   // an uncertain serial interval with a mean of 4.7 days (95% CrI: 3.7, 6.0) 
