@@ -7,6 +7,8 @@ for(i in 1:nrow(dat_diff)) {
   cases_to_onsets[i, i:nrow(dat_diff)]  = p_observed[1:(nrow(dat_diff)-i+1)]
 }
 
+date_vector = dat_diff$date
+
 cases_to_onsets[1:4, 1:4]
 cases_to_onsets[50:54, 50:54]
 
@@ -66,22 +68,25 @@ post$lambda_steps %>% apply(c(2,3), mean) %>% .[, 3] %>%  ts.plot()
 stan_data$cases[, 1] %>% ts.plot()
 stan_data$tests[, 1] %>% ts.plot()
 post$inferred_onsets %>% apply(c(2,3), mean) %>% .[, 1] %>%  ts.plot()
+post$scaled_inferred_onsets %>% apply(c(2,3), mean) %>% .[, 1] %>%  ts.plot()
 
 stan_data$cases[, 2] %>% ts.plot()
 post$inferred_onsets %>% apply(c(2,3), mean) %>% .[, 2] %>%  ts.plot()
+post$scaled_inferred_onsets %>% apply(c(2,3), mean) %>% .[, 2] %>%  ts.plot()
 
 stan_data$cases[, 3] %>% ts.plot()
 stan_data$tests[, 3] %>% ts.plot()
 post$smoothed_cases %>% apply(c(2,3), mean) %>% .[, 3] %>%  ts.plot()
 
-post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 1] %>%  ts.plot()
-post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 2] %>%  ts.plot()
-post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 3] %>%  ts.plot()
+log(post$inferred_theta) %>% apply(c(2,3), mean) %>% .[, 1] %>%  ts.plot()
+
+post$rt %>% apply(c(2,3), mean) %>% .[, 2] %>%  ts.plot()
+post$rt %>% apply(c(2,3), mean) %>% .[, 3] %>%  ts.plot()
 
 impl_theta_1 = 
   log(
-    (post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[-1, 1] / cum_p_observed[-1]) / 
-    (post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[-54, 1] / cum_p_observed[-54])
+    (post$inferred_onsets %>% apply(c(2,3), mean) %>% .[-1, 1] / cum_p_observed[-1]) / 
+    (post$inferred_onsets %>% apply(c(2,3), mean) %>% .[-54, 1] / cum_p_observed[-54])
   )
 
 ts.plot(impl_theta_1 * 4 + 1)
@@ -89,11 +94,19 @@ ts.plot(impl_theta_1 * 4 + 1)
 
 impl_theta_2 = 
   log(
-    (post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[-1, 2] / cum_p_observed[-1]) / 
-      (post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[-54, 2] / cum_p_observed[-54])
+    (post$inferred_onsets %>% apply(c(2,3), mean) %>% .[-1, 2] / cum_p_observed[-1]) / 
+      (post$inferred_onsets %>% apply(c(2,3), mean) %>% .[-54, 2] / cum_p_observed[-54])
   )
 
 ts.plot(impl_theta_2 * 4 + 1)
+
+impl_theta_3 = 
+  log(
+    (post$inferred_onsets %>% apply(c(2,3), mean) %>% .[-1, 3] / cum_p_observed[-1]) / 
+      (post$inferred_onsets %>% apply(c(2,3), mean) %>% .[-54, 3] / cum_p_observed[-54])
+  )
+
+ts.plot(impl_theta_3)
 
 
 post$theta %>% apply(c(2,3), mean) %>% .[, 1] %>% ts.plot()

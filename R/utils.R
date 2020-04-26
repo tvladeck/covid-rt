@@ -17,12 +17,16 @@ summarize_par_from_posterior = function(par, post, orig_dat, date_vec, yint = 1)
   upper_mtx = post[[par]] %>% apply(c(2,3), function(x) hdi(x, ci = .95)[1, 3])
   lower_mtx = post[[par]] %>% apply(c(2,3), function(x) hdi(x, ci = .95)[1, 2])
   
+  if(nrow(lower_mtx) < nrow(orig_dat)) {
+    date_vec = date_vec[-1]
+  }
+  
   r = list(mean_mtx, upper_mtx, lower_mtx) %>% 
     map2(c("mean", "upper", "lower"), 
          ~ .x %>% 
            as.data.frame %>% 
            setNames(colnames(orig_dat)) %>% 
-           mutate(date = date_vec[-1]) %>% 
+           mutate(date = date_vec) %>% 
            gather(-date, key = state, value = !!.y)) %>% 
     reduce(~ left_join(.x, .y, by = c("date", "state")))
   
