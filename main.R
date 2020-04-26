@@ -63,7 +63,8 @@ fit = sampling(
   stan_data,
   chains = 1, 
   cores = 1,
-  iter = 10
+  iter = 10,
+  init = 0
 )
 
 post = rstan::extract(fit)
