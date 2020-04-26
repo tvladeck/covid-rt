@@ -58,13 +58,19 @@ stan_data = list(
 
 mod = stan_model("stan_models/rt-v8-reporting-error.stan")
 
+initfn = function(x) {
+  list(
+    theta_steps = matrix(0, ncol = stan_states, nrow = stan_timesteps-1)
+  )
+}
+
 fit = sampling(
   mod, 
   stan_data,
   chains = 1, 
   cores = 1,
   iter = 10,
-  init = 0
+  init = initfn
 )
 
 post = rstan::extract(fit)
