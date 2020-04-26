@@ -47,7 +47,7 @@ transformed parameters {
   
   for(s in 1:states) {
     upscaled_smoothed_onsets[, s] = smoothed_onsets[, s]./cum_p_observed;
-    theta[, s] = upscaled_smoothed_onsets[2:timesteps, s] ./ upscaled_smoothed_onsets[1:(timesteps-1), s];
+    theta[, s] = log(upscaled_smoothed_onsets[2:timesteps, s] ./ upscaled_smoothed_onsets[1:(timesteps-1), s]);
     theta_steps[2:(timesteps-1), s] = theta[2:(timesteps-1), s] - theta[1:(timesteps-2), s];
     theta_steps[1, s] = theta[1, s];
   }

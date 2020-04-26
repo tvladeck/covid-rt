@@ -48,7 +48,7 @@ post$log_smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 2] %>%  plot
 
 
 post$theta %>% apply(c(2,3), mean) %>% .[, 1] %>% plot
-post$theta %>% apply(c(2,3), mean) %>% .[, 1] %>% diff %>% plot
+post$theta %>% apply(c(2,3), mean) %>% .[, 1] %>% log %>% diff %>% plot
 post$rt %>% apply(c(2,3), mean) %>% .[, 1] %>% plot
 post$rt %>% apply(c(2,3), mean) %>% .[, 2] %>% plot
 
