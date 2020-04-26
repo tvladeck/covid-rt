@@ -10,6 +10,13 @@ for(i in 1:nrow(dat_diff)) {
 cases_to_onsets[1:4, 1:4]
 cases_to_onsets[50:54, 50:54]
 
+onsets_to_cases = solve(cases_to_onsets)
+
+
+
+impl_cases_1 = onsets_to_cases %*% (post$smoothed_onsets %>% apply(c(2,3), mean) %>% .[, 1])
+
+
 modeled_state = c("massachusetts", "michigan")
 col_idx = which(colnames(dat_diff) == modeled_state)
 
@@ -29,7 +36,7 @@ stan_data = list(
   p_observed = p_observed
 )
 
-mod = stan_model("stan_models/rt-v7-reporting-error.stan")
+mod = stan_model("stan_models/rt-v8-reporting-error.stan")
 
 fit = sampling(
   mod, 
@@ -44,11 +51,8 @@ post = rstan::extract(fit)
 stan_trace(fit, pars = c("tau"))
 
 post$lambda %>% apply(c(2,3), mean) %>% .[, 1] %>%  ts.plot()
-
 post$lambda %>% apply(c(2,3), mean) %>% .[, 2] %>%  ts.plot()
 post$lambda %>% apply(c(2,3), mean) %>% .[, 3] %>%  ts.plot()
-
-
 
 stan_data$cases[, 1] %>% ts.plot()
 stan_data$tests[, 1] %>% ts.plot()
