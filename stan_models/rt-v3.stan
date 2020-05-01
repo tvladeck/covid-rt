@@ -30,6 +30,8 @@ transformed parameters {
   matrix[timesteps-1, states] rt;
   matrix[timesteps-1, states] inferred_cases_yesterday;
   matrix[timesteps-1, states] expected_cases_today;
+  matrix[timesteps-1, states] rt_ratio;
+  matrix[timesteps-1, states] rt_adj;
 
   for(s in 1:states) {
     theta[, s] = cumulative_sum(theta_steps[, s]);
@@ -39,6 +41,16 @@ transformed parameters {
   
   gam = 1/serial_interval;
   rt = theta/gam + 1;
+  
+  for(s in 1:states) {
+    for(t in 1:(timesteps-1)) {
+      rt[t, s] = fmax(rt[t, s], 0.01);
+    }
+  }
+  
+  rt_ratio[1, ] = rep_row_vector(1, states);
+  rt_ratio[2:(timesteps-1), ] = rt[2:(timesteps-1), ] ./ rt[1:(timesteps-2), ];
+  rt_adj = rt - log(rt_ratio)/gam;
 
 
 }

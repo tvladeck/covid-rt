@@ -1,5 +1,27 @@
 for(f in list.files("scripts", full.names = T)) source(f)
 
+stan_mod = stan_model("stan_models/rt-v3.stan")
+
+fit = sampling(
+  stan_mod,
+  stan_data,
+  cores = 1,
+  chains = 1,
+  iter = 2000
+)
+
+post = rstan::extract(fit)
+
+
+plot_par_from_posterior("rt", post, stan_data$cases, date_vector, 1)
+
+
+
+
+
+
+
+
 p_observed = c(empirical_timing_dist, rep(0, nrow(dat_diff)-length(empirical_timing_dist)))
 
 timesteps = nrow(dat_diff)

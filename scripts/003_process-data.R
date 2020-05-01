@@ -55,7 +55,7 @@ shutdown_grid =
   map(~ convert_shutdown_dates_to_date_vector(.x, dat_diff, 3)) %>% 
   reduce(cbind.data.frame) %>% 
   setNames(names(shutdown_dates)) %>% 
-  select(1, 3:20) %>% 
+  select(1, 3:10) %>% 
   select(-hawaii)
 
 dat_recompiled = 
@@ -91,6 +91,9 @@ stan_data = list(
   init_theta_mean = 0.3352583,
   init_theta_sd = 0.3032382
 )
+
+
+
 
 deaths_dat = dat %>% 
   select(state, date, deathIncrease) %>% 
