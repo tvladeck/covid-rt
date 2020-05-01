@@ -88,7 +88,8 @@ implied_onsets = function(par) {
     list(
       onsets = onsets,
       observed_onsets = observed_onsets,
-      cases = cases
+      cases = cases,
+      thetas = thetas
     )
   )
 }
@@ -97,10 +98,8 @@ implied_onsets = function(par) {
 
 
 
-modeled_state = c("massachusetts", "michigan")
-col_idx = which(colnames(dat_diff) == modeled_state)
-
-col_idx = c(23, 24, 34)
+modeled_state = c("massachusetts", "michigan", "new_york")
+col_idx = unlist(map(modeled_state, ~ which(colnames(dat_diff) == .x)))
 
 stan_cases = dat_diff[, col_idx]
 stan_tests = tests[, col_idx]
@@ -124,6 +123,15 @@ initfn = function(x) {
     theta_steps = matrix(0, ncol = stan_states, nrow = stan_timesteps-1)
   )
 }
+
+fit = optimizing(
+  mod, 
+  stan_data,
+  iter = 1000,
+  init = initfn,
+  as_vector = F,
+  verbose = T
+)
 
 fit = sampling(
   mod, 

@@ -52,7 +52,8 @@ transformed parameters {
 }
 
 model {
-  tau ~ gamma(.5, .5);
+  tau[1] ~ gamma(.5, .5);
+  tau[2] ~ normal(0, .2);
   
   initial_onsetload ~ gamma(1, .1);
   

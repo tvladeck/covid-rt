@@ -92,3 +92,50 @@ stan_data = list(
   init_theta_sd = 0.3032382
 )
 
+deaths_dat = dat %>% 
+  select(state, date, deathIncrease) %>% 
+  mutate(death_date = ymd(date)) %>% 
+  select(-date)
+
+cases_dat = dat %>% 
+  select(state, date, positiveIncrease) %>% 
+  mutate(case_date = ymd(date)) %>% 
+  select(-date)
+
+all_dates = expand.grid(
+  case_date = unique(cases_dat$case_date),
+  death_date = unique(deaths_dat$death_date)
+) %>% 
+  filter(case_date < death_date)
+
+cases_dat_expanded = all_dates %>% 
+  left_join(cases_dat)
+
+deaths_dat_expanded = deaths_dat %>% 
+  left_join(cases_dat_expanded) %>% 
+  mutate(days_ago = as.integer(difftime(death_date, case_date, units = "days"))) 
+
+fin_dat1 = 
+  deaths_dat_expanded %>% 
+  select(state, deathIncrease, death_date, positiveIncrease, days_ago) %>% 
+  spread(days_ago, positiveIncrease)
+
+colnames(fin_dat1)[4:ncol(fin_dat1)] = str_c("d_", colnames(fin_dat1)[4:ncol(fin_dat1)]) 
+
+fin_dat2 = 
+  fin_dat1 %>% 
+  mutate_at(vars(deathIncrease, starts_with("d_")), ~ ifelse(is.na(.x), 0, .x))
+
+all_zeros = rowSums(fin_dat2[, c(2, 4:ncol(fin_dat2))]) == 0
+
+fin_dat3 = fin_dat2[!all_zeros, ] %>% 
+  filter(deathIncrease >= 0)
+
+
+fin_dat_simple = fin_dat3[, c(2, 4:70)]
+summary(lm(deathIncrease ~ -1 + ., fin_dat_simple))
+coef(lm(deathIncrease ~ -1 + ., fin_dat_simple)) %>% plot
+summary(glm(deathIncrease ~ -1 + ., fin_dat_simple, family = "poisson"))
+coef(glm(deathIncrease ~ -1 + ., fin_dat_simple, family = "poisson")) %>% exp
+
+library(glmnet)
