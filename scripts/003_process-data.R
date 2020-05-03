@@ -80,9 +80,14 @@ date_vector = dat_diff$date[1:nrow(dat_recompiled_with_shutdowns)]
   
 cum_p_observed = convert_filter_to_cumsum(empirical_timing_dist, nrow(dat_recompiled_with_shutdowns))
 
+tests_dat = 
+  tests %>% select(colnames(dat_recompiled_with_shutdowns)) %>% 
+  mutate_all( ~ ifelse(.x < 0, 0, .x))
+
 stan_data = list(
   timesteps = nrow(dat_recompiled_with_shutdowns),
   states = ncol(dat_recompiled_with_shutdowns),
+  tests = tests_dat,
   cases = dat_recompiled_with_shutdowns,
   shutdowns = shutdown_grid_capped,
   cum_p_observed = cum_p_observed,

@@ -1,25 +1,78 @@
 for(f in list.files("scripts", full.names = T)) source(f)
 
-stan_mod = stan_model("stan_models/rt-v3.stan")
+stan_mod = stan_model("stan_models/rt-v10-reporting-error-with-changing-tests.stan")
 
 fit = sampling(
   stan_mod,
   stan_data,
-  cores = 1,
-  chains = 1,
+  cores = 2,
+  chains = 2,
   iter = 2000
 )
 
+stan_trace(fit, "fitted_cases[10, 1]")
+
 post = rstan::extract(fit)
 
+cbind(
+  post$fitted_tests %>% apply(c(2,3), mean) %>% .[, 2],
+  stan_data$tests$california
+) %>% 
+  ts.plot(col=c("red", "blue"))
 
-plot_par_from_posterior("rt", post, stan_data$cases, date_vector, 1)
+cbind(
+  post$expected_cases %>% apply(c(2,3), mean) %>% .[, 1],
+  stan_data$cases$alabama
+) %>% 
+  ts.plot(col=c("red", "blue"))
 
+plot_par_from_posterior("fitted_cases", post, stan_data$cases, date_vector, 1)
 
+plot_par_from_posterior("rt_adj", post, stan_data$cases, date_vector, 1)
 
+par(mfrow=c(1,3))
 
+state_idx = 2
 
+ex_rt = post$rt %>% apply(c(2,3), mean) %>% .[, state_idx]
 
+scaling = 1.1
+
+idk = function(x) {
+  d = c(x[1]*scaling, x)
+  l = length(d)
+  sum((ex_rt - d[2:l] - log(d[2:l]/d[1:(l-1)])*4)**2)
+}
+
+produce_rhat = function(x) {
+  d = c(x[1]*scaling, x)
+  l = length(d)
+  return(d[2:l] + log(d[2:l]/d[1:(l-1)])*4)
+}
+
+find_rt = optim(par = ex_rt+rnorm(length(ex_rt), sd = 0.001), fn = idk, lower=rep(0.01, length(ex_rt)), method = "L-BFGS-B")
+find_rt$value
+find_rt$par
+# find_rt$par %>% ts.plot()
+# produce_rhat(find_rt$par) %>% ts.plot()
+# ex_rt %>% ts.plot()
+
+mt = str_c(colnames(stan_data$cases)[state_idx], "; K = ", scaling)
+
+cbind(find_rt$par, ex_rt) %>% 
+  ts.plot(col = c("red", "blue"), ylim = c(.8, 1.6), main = mt, xlim=c(20,60))
+
+legend("topright", c("adjusted", "unadjusted"), col = c("red", "blue"), lty = 1)
+
+# rt_0.9 = find_rt$par
+# rt_1 = find_rt$par
+# rt_1_1 = find_rt$par
+
+cbind(rt_0.9, rt_1, rt_1_1) %>% 
+  ts.plot(col = c("red", "green", "blue"))
+legend("topright", c("K=.9", "K=1", "K=1.1"), col = c("red", "green", "blue"), lty = 1)
+
+par(mfrow=c(1,1))
 
 
 p_observed = c(empirical_timing_dist, rep(0, nrow(dat_diff)-length(empirical_timing_dist)))
