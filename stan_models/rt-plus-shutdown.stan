@@ -1,27 +1,18 @@
-// to do
-// - bring the timing distribution into stan with the line list
-// - do the convolution in stan as well
-//   - this will make the dependent var a parameter
-//   - https://www.youtube.com/watch?v=KOIudAB6vJ0
-//   - or can i just round it s.t. i get an int? 
 
 data {
 
   int timesteps; 
   int states;
-  int cases[timesteps, states]; // diffed & convolved // eventually move this to xformed parameters
-  vector[timesteps] cum_p_observed; // make this estimated given timing block
+  int cases_convolved[timesteps, states]; 
+  vector[timesteps] cum_p_observed; 
   matrix[timesteps, states] shutdowns;
   
 } 
 
 parameters {
   real<lower=0> serial_interval;
-  
   real<lower=0> step_size;
-  
   matrix[timesteps-1, states] intcpt_steps;
-  
   real mean_shutdown_effect;
   vector[states] state_shutdown_effects_std;
   real<lower=0> tau;
@@ -30,13 +21,10 @@ parameters {
 transformed parameters {
   real<lower=0> gam;
   matrix[timesteps-1, states] rt;
-
   matrix[timesteps-1, states] theta;
   matrix[timesteps-1, states] intcpt;
-  
   vector[states] shutdown_impact_on_rt;
   vector[states] state_shutdown_effects;
-  
   matrix[timesteps-1, states] inferred_cases_yesterday;
   matrix[timesteps-1, states] expected_cases_today;
 
@@ -46,7 +34,7 @@ transformed parameters {
   for(s in 1:states) {
     intcpt[, s] = cumulative_sum(intcpt_steps[, s]);
     theta[, s] = intcpt[, s] + state_shutdown_effects[s] * shutdowns[2:timesteps, s];
-    inferred_cases_yesterday[, s] = to_vector(cases[1:(timesteps-1), s]) ./ cum_p_observed[1:(timesteps-1)];
+    inferred_cases_yesterday[, s] = to_vector(cases_convolved[1:(timesteps-1), s]) ./ cum_p_observed[1:(timesteps-1)];
     expected_cases_today[, s] = cum_p_observed[2:timesteps] .* inferred_cases_yesterday[, s] .* exp(theta[, s]);
   }
   
@@ -73,7 +61,7 @@ model {
     for(s in 1:states) {
       real mu;
       mu = fmax(expected_cases_today[t, s], 0.1); 
-      cases[t+1, s] ~ poisson(mu);
+      cases_convolved[t+1, s] ~ poisson(mu);
     } 
   }
   
@@ -87,7 +75,7 @@ generated quantities {
     for(s in 1:states) {
       real mu;
       mu = fmax(expected_cases_today[t, s], 0.1); 
-      loglikm[t, s] = poisson_lpmf(cases[t+1, s] | mu);
+      loglikm[t, s] = poisson_lpmf(cases_convolved[t+1, s] | mu);
     } 
   }
   

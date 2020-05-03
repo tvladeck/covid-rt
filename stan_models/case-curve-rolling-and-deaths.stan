@@ -1,7 +1,7 @@
 data {
   int timesteps; 
   int states;
-  int cases[timesteps, states]; // raw
+  int cases_raw[timesteps, states]; // raw
   int tests[timesteps, states]; // raw
   int deaths[timesteps, states]; // raw
 } 
@@ -46,7 +46,7 @@ model {
   for(s in 1:states) {
     for(t in 1:timesteps) {
       tests[t, s] ~ neg_binomial_2(fitted_tests[t, s], tau[5]);
-      if(expected_cases[t, s] > 0) cases[t, s] ~ neg_binomial_2(expected_cases[t, s], tau[6]);
+      if(expected_cases[t, s] > 0) cases_raw[t, s] ~ neg_binomial_2(expected_cases[t, s], tau[6]);
     }
   }
 
@@ -58,7 +58,7 @@ generated quantities {
   
   for(s in 1:states) {
     for(t in 1:timesteps) {
-      log_lik_matrix[t, s] = neg_binomial_2_lpmf(cases[t, s] | fitted_cases[t, s], tau[5]);
+      log_lik_matrix[t, s] = neg_binomial_2_lpmf(cases_raw[t, s] | fitted_cases[t, s], tau[5]);
     }
   }
   

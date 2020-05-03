@@ -1,8 +1,9 @@
 data {
   int timesteps; 
   int states;
-  int cases[timesteps, states]; // raw
-  int tests[timesteps, states]; // raw
+  int cases_raw[timesteps, states]; 
+  int tests[timesteps, states]; 
+  real max_scaling_factor;
 } 
 
 parameters {
@@ -33,7 +34,7 @@ model {
       if(tests[t, s] > 0) {
         real scaled_tests = tests[t, s] / max(tests[, s]);
         real mutest = fmax(scaled_tests, .1);
-        cases[t, s] ~ neg_binomial_2(mutest .* exp(lambda[t, s]), tau[3]);
+        cases_raw[t, s] ~ neg_binomial_2(mutest .* exp(lambda[t, s]), tau[3]);
       }
     }
   }
@@ -49,7 +50,7 @@ generated quantities {
       if(tests[t, s] > 0) {
         real scaled_tests = tests[t, s] / max(tests[, s]);
         real mutest = fmax(scaled_tests, .1);
-        log_lik_matrix[t, s] = neg_binomial_2_lpmf(cases[t, s] | mutest .* exp(lambda[t, s]), tau[3]);
+        log_lik_matrix[t, s] = neg_binomial_2_lpmf(cases_raw[t, s] | mutest .* exp(lambda[t, s]), tau[3]);
       } else {
         log_lik_matrix[t, s] = 0;
       }
